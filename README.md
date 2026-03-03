@@ -99,6 +99,12 @@ Press **F1** in-game for the full interactive help menu. Here are the essentials
 6. Launch the game via OWML
 7. You should hear: *"Outer Wilds Access loaded. F1 for help."*
 
+## Important: Before You Explore
+
+**The Nomai Statue**: After getting the launch codes, you **must** visit the Nomai statue in the observatory on Timber Hearth. Walk close to it and the statue will scan you automatically (your controls will lock for about 10 seconds during the sequence). This activates the time loop, which is the core mechanic of the game. Without this encounter, the loop will not start and the game cannot truly begin. The statue appears in the navigation scan (Home) under Interactables as "Nomai statue".
+
+**How saving works**: Outer Wilds has no manual save. The game automatically saves your **knowledge** (ship log entries, discovered facts) at the end of each time loop — whether you die, the supernova goes off, or you meditate to skip the loop. Your physical progress (position, items) resets every loop, but everything you've learned is permanent. This is by design: the game is about accumulating knowledge, not checkpoints.
+
 ## Known Limitations
 
 - **Auto-walk & pathfinding**: the A* algorithm works on a 1m grid with 3D height propagation. It handles open terrain, slopes, and basic obstacles well, but struggles with tight indoor spaces, complex multi-level geometry, and areas where the walkable path isn't obvious from raycasts. Slopes above 45° are impassable. Ghost matter detection may come too late in some areas. When the path fails, use teleportation (T) as a fallback.

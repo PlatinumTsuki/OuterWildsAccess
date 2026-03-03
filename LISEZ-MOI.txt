@@ -48,6 +48,27 @@ Si tout est correct, ton lecteur d'écran annonce :
 "Outer Wilds Access chargé. F1 pour l'aide."
 
 
+IMPORTANT : AVANT D'EXPLORER
+==============================
+LA STATUE NOMAI : Après avoir obtenu les codes de lancement, vous devez
+impérativement vous rendre à la statue Nomaï dans l'observatoire de
+Timber Hearth. Marchez près d'elle et elle vous scannera automatiquement
+(vos contrôles seront bloqués pendant environ 10 secondes). Cela active
+la boucle temporelle, le mécanisme central du jeu. Sans cette rencontre,
+la boucle ne démarrera pas et le jeu ne peut pas vraiment commencer.
+La statue apparaît dans le scan de navigation (Début) sous Objets
+interactifs, nommée "Statue Nomaï".
+
+LA SAUVEGARDE : Outer Wilds n'a pas de sauvegarde manuelle. Le jeu
+sauvegarde automatiquement vos connaissances (entrées du journal de bord,
+faits découverts) à la fin de chaque boucle temporelle — que vous mouriez,
+que la supernova explose, ou que vous méditiez pour passer la boucle.
+Votre progression physique (position, objets) est réinitialisée à chaque
+boucle, mais tout ce que vous avez appris est permanent. C'est voulu :
+le jeu repose sur l'accumulation de connaissances, pas sur des points
+de contrôle.
+
+
 TOUCHES PRINCIPALES
 ====================
 F1          — Aide (liste toutes les touches)
