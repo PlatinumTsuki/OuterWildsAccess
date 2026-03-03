@@ -2,6 +2,16 @@
 
 All notable changes to Outer Wilds Access are documented here.
 
+## 1.0.1 (2026-03-03)
+
+### Added
+- **Mod toggle (F5)**: completely disables the mod on the fly — no announcements, no audio, no hotkeys. Press F5 again to re-enable. Useful when handing the game to a sighted player.
+
+### Changed
+- Author updated to PlatinumTsuki
+- Removed unused description field from manifest.json
+- Enriched README with detailed feature descriptions, teleportation rationale, and pathfinding limitations
+
 ## 1.0.0 (2026-03-03)
 
 First stable release — built over 14 development sessions.

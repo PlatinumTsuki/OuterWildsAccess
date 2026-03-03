@@ -47,6 +47,7 @@ Outer Wilds Access is a comprehensive accessibility mod that makes [Outer Wilds]
 - Meditation available from the start (no need to complete the first loop)
 - Ghost matter protection (no instant death)
 - Peaceful ghosts in the DLC (optional)
+- **Mod toggle (F5)**: completely disables the mod on the fly — no announcements, no sounds, no hotkeys. Press F5 again to re-enable. Useful when handing the game to a sighted player.
 
 ## Controls
 
@@ -56,6 +57,7 @@ Press **F1** in-game for the full interactive help menu. Here are the essentials
 - **F1** — Help menu
 - **F2** — Loop timer
 - **F3** — Recall ship
+- **F5** — Disable/re-enable the mod (for handing the game to a sighted player)
 - **F4** — Ship log reader
 - **F6** — Accessibility settings
 - **Delete** — Repeat last announcement

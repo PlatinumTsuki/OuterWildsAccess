@@ -185,6 +185,7 @@ namespace OuterWildsAccess
         public static void Say(string text, SpeechPriority priority = SpeechPriority.Next)
         {
             if (string.IsNullOrEmpty(text)) return;
+            if (!Main.ModEnabled) return;
 
             // Deduplicate: drop if same text was just spoken within DedupMs
             int now = Environment.TickCount;
@@ -250,6 +251,27 @@ namespace OuterWildsAccess
             {
                 _modHelper?.Console.WriteLine($"ScreenReader.Say failed: {ex.Message}", MessageType.Warning);
             }
+        }
+
+        /// <summary>
+        /// Announces text bypassing the ModEnabled check.
+        /// Used only for the F5 toggle announcement.
+        /// </summary>
+        public static void SayForce(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            if (!_available) return;
+            try
+            {
+                if (_isNvda && ModSettings.NvdaDirectEnabled)
+                {
+                    nvdaController_cancelSpeech();
+                    int result = nvdaController_speakText(text);
+                    if (result == 0) return;
+                }
+                Tolk_Output(text, true);
+            }
+            catch { }
         }
 
         /// <summary>

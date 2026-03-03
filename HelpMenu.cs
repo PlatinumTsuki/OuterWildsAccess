@@ -227,6 +227,7 @@ namespace OuterWildsAccess
             // Category 5: Réglages
             _categories[5] = new HelpItem[]
             {
+                new HelpItem { KeyLocKey = "help_key_f5", DescLocKey = "help_desc_f5" },
                 new HelpItem { KeyLocKey = "help_key_f6", DescLocKey = "help_desc_f6" },
             };
         }

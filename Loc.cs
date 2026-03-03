@@ -121,6 +121,8 @@ namespace OuterWildsAccess
             _strings["mod_loaded"]  = "Outer Wilds Access chargé. F1 pour l'aide.";
             _strings["debug_on"]    = "Mode débogage activé.";
             _strings["debug_off"]   = "Mode débogage désactivé.";
+            _strings["mod_disabled"] = "Outer Wilds Access désactivé.";
+            _strings["mod_enabled"]  = "Outer Wilds Access activé.";
 
             // ===== HELP MENU (F1) =====
             _strings["help_open"]        = "Aide ouverte. Flèches pour naviguer. Entrée pour ouvrir une catégorie. Retour arrière pour revenir. Escape pour fermer.";
@@ -142,6 +144,7 @@ namespace OuterWildsAccess
             _strings["help_key_f2"]         = "F2";
             _strings["help_key_f3"]         = "F3";
             _strings["help_key_f4"]         = "F4";
+            _strings["help_key_f5"]         = "F5";
             _strings["help_key_f6"]         = "F6";
             _strings["help_key_f12"]        = "F12";
             _strings["help_key_delete"]     = "Suppr";
@@ -165,6 +168,7 @@ namespace OuterWildsAccess
             _strings["help_desc_f2"]        = "Temps restant avant la supernova";
             _strings["help_desc_f3"]        = "Rappeler le vaisseau au-dessus de vous";
             _strings["help_desc_f4"]        = "Journal de bord — parcourir les découvertes";
+            _strings["help_desc_f5"]        = "Désactiver ou réactiver le mod";
             _strings["help_desc_f6"]        = "Ouvrir le menu réglages";
             _strings["help_desc_f12"]       = "Activer ou désactiver le mode debug";
             _strings["help_desc_delete"]    = "Répéter la dernière annonce";
@@ -596,6 +600,7 @@ namespace OuterWildsAccess
             _strings["menu_open"]   = "Réglages ouverts. Flèches ou Page pour naviguer. Entrée pour activer ou désactiver. F6 pour fermer.";
             _strings["menu_closed"] = "Réglages sauvegardés.";
             _strings["menu_cancel"] = "Réglages annulés.";
+            _strings["cheats_unlocked"] = "Options avancées déverrouillées.";
             _strings["menu_item_beacon"]     = "Balise audio";
             _strings["menu_item_navigation"] = "Navigation";
             _strings["menu_item_status"]    = "{0} : {1}";
@@ -662,6 +667,8 @@ namespace OuterWildsAccess
             _strings["mod_loaded"]  = "Outer Wilds Access loaded. Press F1 for help.";
             _strings["debug_on"]    = "Debug mode enabled.";
             _strings["debug_off"]   = "Debug mode disabled.";
+            _strings["mod_disabled"] = "Outer Wilds Access disabled.";
+            _strings["mod_enabled"]  = "Outer Wilds Access enabled.";
 
             // ===== HELP MENU (F1) =====
             _strings["help_open"]        = "Help opened. Arrows to navigate. Enter to open a category. Backspace to go back. Escape to close.";
@@ -683,6 +690,7 @@ namespace OuterWildsAccess
             _strings["help_key_f2"]         = "F2";
             _strings["help_key_f3"]         = "F3";
             _strings["help_key_f4"]         = "F4";
+            _strings["help_key_f5"]         = "F5";
             _strings["help_key_f6"]         = "F6";
             _strings["help_key_f12"]        = "F12";
             _strings["help_key_delete"]     = "Delete";
@@ -706,6 +714,7 @@ namespace OuterWildsAccess
             _strings["help_desc_f2"]        = "Time remaining before the supernova";
             _strings["help_desc_f3"]        = "Recall your ship above you";
             _strings["help_desc_f4"]        = "Ship log — browse your discoveries";
+            _strings["help_desc_f5"]        = "Disable or re-enable the mod";
             _strings["help_desc_f6"]        = "Open settings menu";
             _strings["help_desc_f12"]       = "Toggle debug mode";
             _strings["help_desc_delete"]    = "Repeat last announcement";
@@ -1137,6 +1146,7 @@ namespace OuterWildsAccess
             _strings["menu_open"]   = "Settings opened. Arrows or Page to navigate. Enter to toggle. F6 to close.";
             _strings["menu_closed"] = "Settings saved.";
             _strings["menu_cancel"] = "Settings cancelled.";
+            _strings["cheats_unlocked"] = "Advanced options unlocked.";
             _strings["menu_item_beacon"]     = "Audio beacon";
             _strings["menu_item_navigation"] = "Navigation";
             _strings["menu_item_status"]    = "{0}: {1}";

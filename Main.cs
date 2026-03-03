@@ -27,6 +27,12 @@ namespace OuterWildsAccess
         /// </summary>
         public static bool DebugMode = false;
 
+        /// <summary>
+        /// Master toggle. When false, the entire mod is silent and inactive.
+        /// Toggle with F5. Only F5 is processed while disabled.
+        /// </summary>
+        public static bool ModEnabled = true;
+
         // Handlers — one per feature
         private MenuHandler       _menuHandler;
         private StateHandler      _stateHandler;
@@ -170,6 +176,15 @@ namespace OuterWildsAccess
 
         private void Update()
         {
+            // F5 toggle is always processed, even when mod is disabled
+            if (Keyboard.current != null && Keyboard.current.f5Key.wasPressedThisFrame)
+            {
+                ToggleMod();
+                return;
+            }
+
+            if (!ModEnabled) return;
+
             ProcessHotkeys();
             _menuHandler?.Update();
             _promptHandler?.Update();
@@ -737,6 +752,41 @@ namespace OuterWildsAccess
         #endregion
 
         #region Startup
+
+        /// <summary>
+        /// Toggles the entire mod on/off. When disabled, stops all active
+        /// features and silences screen reader output.
+        /// </summary>
+        private void ToggleMod()
+        {
+            if (ModEnabled)
+            {
+                // Stop active features before disabling
+                if (_autoWalkHandler?.IsActive == true) _autoWalkHandler.Toggle();
+                if (_pathGuidanceHandler?.IsActive == true)
+                {
+                    _pathGuidanceHandler.Toggle();
+                    _navigationHandler?.SetGuidanceActive(false);
+                }
+                _beaconHandler?.SetMuted(true);
+
+                // Close any open menus
+                if (_accessibilityMenu?.IsOpen == true) _accessibilityMenu.Close();
+                if (_helpMenu?.IsOpen == true) _helpMenu.Close();
+                if (_shipLogReader?.IsOpen == true) _shipLogReader.OnF4Pressed();
+
+                // Announce THEN disable (force bypasses ModEnabled check)
+                ModEnabled = false;
+                ScreenReader.SayForce(Loc.Get("mod_disabled"));
+                DebugLogger.LogState("Mod DISABLED via F5");
+            }
+            else
+            {
+                ModEnabled = true;
+                ScreenReader.SayForce(Loc.Get("mod_enabled"));
+                DebugLogger.LogState("Mod ENABLED via F5");
+            }
+        }
 
         private IEnumerator AnnounceLoadedDelayed()
         {
