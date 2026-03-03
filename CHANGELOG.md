@@ -2,6 +2,15 @@
 
 All notable changes to Outer Wilds Access are documented here.
 
+## 1.0.3 (2026-03-03)
+
+### Added
+- **Scout probe handler (O)**: automatic announcements when the probe is launched, anchored, retrieved, or destroyed. Snapshot announcements. Interference detection (polling). On-demand status with distance, anchor time, and interference info.
+
+### Changed
+- **Key reassignment**: auto-walk moved from O to **M**, scout probe status assigned to **O**
+- All help menu entries and localization keys updated to match new bindings (no residual data)
+
 ## 1.0.2 (2026-03-03)
 
 ### Added
@@ -50,7 +59,7 @@ First stable release — built over 14 development sessions.
 - Height-aware cache keys (x, z, hBucket) with 3m height bands
 - Max 4000 explored cells, shared PathScanner instance with result caching
 - Audio guidance with 5 alignment tiers and 3D spatialized sound
-- Auto-walk (O): follows A* waypoints, automatic obstacle avoidance
+- Auto-walk (M): follows A* waypoints, automatic obstacle avoidance
 - Automatic jumping at jumpable waypoints via Harmony postfix
 - Blocked detection with rescan (3 attempts max), slope detection (>45°), fall detection (airborne >3s)
 - Camera pitch sweep on arrival to find interactables

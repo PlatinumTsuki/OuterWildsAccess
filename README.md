@@ -20,7 +20,8 @@ Outer Wilds Access is a comprehensive accessibility mod that makes [Outer Wilds]
 - Cycle through nearby objects with PageUp/PageDown
 - Distance and direction announced on demand (End)
 - **Audio guidance**: tonal cues that change pitch and speed based on your alignment with the target (G)
-- **Auto-walk**: follows the A* pathfinding route to your target, with automatic obstacle avoidance and jump detection (O)
+- **Auto-walk**: follows the A* pathfinding route to your target, with automatic obstacle avoidance and jump detection (M)
+- **Scout probe tracking**: automatic announcements when your probe is launched, anchored, retrieved, or destroyed, plus on-demand status (O)
 
 ### Piloting
 - Ship autopilot to any planet or moon — 13 destinations (Home/PageUp/PageDown/End at the controls)
@@ -69,7 +70,8 @@ Press **F1** in-game for the full interactive help menu. Here are the essentials
 - **Ctrl+PageUp / Ctrl+PageDown** — Change category
 - **End** — Distance and direction to target
 - **G** — Toggle audio guidance
-- **O** — Toggle auto-walk
+- **M** — Toggle auto-walk
+- **O** — Scout probe status
 
 ### Navigation (at ship controls)
 - **Home** — Open destination list

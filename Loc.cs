@@ -159,7 +159,7 @@ namespace OuterWildsAccess
             _strings["help_key_j"]          = "J";
             _strings["help_key_k"]          = "K";
             _strings["help_key_l"]          = "L";
-            _strings["help_key_o"]          = "O";
+            _strings["help_key_m"]          = "M";
             _strings["help_key_t"]          = "T";
             _strings["help_key_u"]          = "U";
 
@@ -179,7 +179,7 @@ namespace OuterWildsAccess
             _strings["help_desc_end_nav"]   = "Distance et direction vers la cible";
             _strings["help_desc_l"]         = "Position détaillée — planète, zone et lieu proche";
             _strings["help_desc_g"]         = "Guidage audio vers la cible par tics sonores";
-            _strings["help_desc_o"]         = "Marche automatique vers la cible";
+            _strings["help_desc_m"]         = "Marche automatique vers la cible";
             _strings["help_desc_t"]         = "Téléportation vers la cible — même planète, 500 mètres maximum";
             _strings["help_desc_h"]         = "État personnel — santé, oxygène, jetpack, boost, combinaison";
             _strings["help_desc_j"]         = "État du vaisseau — carburant, oxygène, coque, dégâts";
@@ -189,6 +189,8 @@ namespace OuterWildsAccess
             _strings["help_desc_pageupdown_pilot"] = "Parcourir les planètes — aux commandes";
             _strings["help_desc_end_pilot"]        = "Lancer l'autopilote vers la destination — aux commandes";
             _strings["help_desc_u"]         = "Statut du scope de signal — fréquence et signal détecté";
+            _strings["help_key_o"]          = "O";
+            _strings["help_desc_o"]         = "Statut du guetteur — distance, ancrage, interférence";
 
             // ===== MENU HANDLER =====
             _strings["toggle_on"]       = "Activé";
@@ -580,6 +582,23 @@ namespace OuterWildsAccess
             _strings["scope_status_full"]      = "Fréquence {0}. {1}, {2}, {3} mètres, {4} degrés.";
             _strings["scope_status_partial"]   = "Fréquence {0}. {1}, {2}, {3} degrés.";
 
+            // ===== SCOUT HANDLER =====
+            _strings["scout_launched"]          = "Guetteur lancé.";
+            _strings["scout_anchored"]          = "Guetteur ancré.";
+            _strings["scout_retrieved"]         = "Guetteur récupéré.";
+            _strings["scout_destroyed"]         = "Guetteur détruit !";
+            _strings["scout_snapshot"]          = "Photo prise.";
+            _strings["scout_interference_on"]   = "Interférence détectée sur le guetteur.";
+            _strings["scout_interference_off"]  = "Interférence dissipée.";
+            _strings["scout_available"]         = "Guetteur disponible.";
+            _strings["scout_unavailable"]       = "Guetteur indisponible.";
+            _strings["scout_distance"]          = "Guetteur : {0} mètres";
+            _strings["scout_anchored_time_min"] = "ancré depuis {0} minutes {1} secondes";
+            _strings["scout_anchored_time_sec"] = "ancré depuis {0} secondes";
+            _strings["scout_retrieving"]        = "en cours de récupération";
+            _strings["scout_in_flight"]         = "en vol";
+            _strings["scout_has_interference"]  = "interférence";
+
             // ===== NOMAI TEXT HANDLER =====
             _strings["nomai_root"]  = "Message :";
             _strings["nomai_reply"] = "Réponse :";
@@ -706,7 +725,7 @@ namespace OuterWildsAccess
             _strings["help_key_j"]          = "J";
             _strings["help_key_k"]          = "K";
             _strings["help_key_l"]          = "L";
-            _strings["help_key_o"]          = "O";
+            _strings["help_key_m"]          = "M";
             _strings["help_key_t"]          = "T";
             _strings["help_key_u"]          = "U";
 
@@ -726,7 +745,7 @@ namespace OuterWildsAccess
             _strings["help_desc_end_nav"]   = "Distance and direction to target";
             _strings["help_desc_l"]         = "Detailed position — planet, zone and nearby location";
             _strings["help_desc_g"]         = "Audio guidance to target using tone cues";
-            _strings["help_desc_o"]         = "Auto-walk to target";
+            _strings["help_desc_m"]         = "Auto-walk to target";
             _strings["help_desc_t"]         = "Teleport to target — same planet, 500 meters max";
             _strings["help_desc_h"]         = "Personal status — health, oxygen, jetpack, boost, suit";
             _strings["help_desc_j"]         = "Ship status — fuel, oxygen, hull, damage";
@@ -736,6 +755,8 @@ namespace OuterWildsAccess
             _strings["help_desc_pageupdown_pilot"] = "Cycle planets — at ship controls";
             _strings["help_desc_end_pilot"]        = "Launch autopilot to destination — at ship controls";
             _strings["help_desc_u"]         = "Signal scope status — frequency and detected signal";
+            _strings["help_key_o"]          = "O";
+            _strings["help_desc_o"]         = "Scout probe status — distance, anchor, interference";
 
             // ===== MENU HANDLER =====
             _strings["toggle_on"]       = "Enabled";
@@ -1126,6 +1147,23 @@ namespace OuterWildsAccess
             _strings["scope_status_no_signal"] = "Frequency {0}. No signal detected.";
             _strings["scope_status_full"]      = "Frequency {0}. {1}, {2}, {3} meters, {4} degrees.";
             _strings["scope_status_partial"]   = "Frequency {0}. {1}, {2}, {3} degrees.";
+
+            // ===== SCOUT HANDLER =====
+            _strings["scout_launched"]          = "Scout launched.";
+            _strings["scout_anchored"]          = "Scout anchored.";
+            _strings["scout_retrieved"]         = "Scout retrieved.";
+            _strings["scout_destroyed"]         = "Scout destroyed!";
+            _strings["scout_snapshot"]          = "Snapshot taken.";
+            _strings["scout_interference_on"]   = "Scout interference detected.";
+            _strings["scout_interference_off"]  = "Interference cleared.";
+            _strings["scout_available"]         = "Scout available.";
+            _strings["scout_unavailable"]       = "Scout unavailable.";
+            _strings["scout_distance"]          = "Scout: {0} meters";
+            _strings["scout_anchored_time_min"] = "anchored for {0} minutes {1} seconds";
+            _strings["scout_anchored_time_sec"] = "anchored for {0} seconds";
+            _strings["scout_retrieving"]        = "being retrieved";
+            _strings["scout_in_flight"]         = "in flight";
+            _strings["scout_has_interference"]  = "interference";
 
             // ===== NOMAI TEXT HANDLER =====
             _strings["nomai_root"]  = "Message:";

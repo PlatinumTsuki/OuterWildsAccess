@@ -195,7 +195,7 @@ namespace OuterWildsAccess
                 new HelpItem { KeyLocKey = "help_key_end",        DescLocKey = "help_desc_end_nav" },
                 new HelpItem { KeyLocKey = "help_key_l",          DescLocKey = "help_desc_l" },
                 new HelpItem { KeyLocKey = "help_key_g",          DescLocKey = "help_desc_g" },
-                new HelpItem { KeyLocKey = "help_key_o",          DescLocKey = "help_desc_o" },
+                new HelpItem { KeyLocKey = "help_key_m",          DescLocKey = "help_desc_m" },
                 new HelpItem { KeyLocKey = "help_key_t",          DescLocKey = "help_desc_t" },
             };
 
@@ -221,6 +221,7 @@ namespace OuterWildsAccess
             _categories[4] = new HelpItem[]
             {
                 new HelpItem { KeyLocKey = "help_key_u",  DescLocKey = "help_desc_u" },
+                new HelpItem { KeyLocKey = "help_key_o",  DescLocKey = "help_desc_o" },
                 new HelpItem { KeyLocKey = "help_key_f4", DescLocKey = "help_desc_f4" },
             };
 

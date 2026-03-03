@@ -57,6 +57,7 @@ namespace OuterWildsAccess
         private SignalscopeHandler   _signalscopeHandler;
         private ShipPilotHandler     _shipPilotHandler;
         private StatusHandler         _statusHandler;
+        private ScoutHandler          _scoutHandler;
 
         // Shared pathfinding instance — used by AutoWalk + Guidance
         private PathScanner          _sharedPathScanner;
@@ -163,6 +164,9 @@ namespace OuterWildsAccess
             _shipPilotHandler = new ShipPilotHandler();
             _shipPilotHandler.Initialize();
 
+            _scoutHandler = new ScoutHandler();
+            _scoutHandler.Initialize();
+
             // Peaceful ghosts (DLC hostile AI disabled)
             PeacefulGhostsHandler.Initialize();
 
@@ -199,6 +203,7 @@ namespace OuterWildsAccess
             _signalscopeHandler?.Update();
             _shipPilotHandler?.Update();
             _autopilotHandler?.Update();
+            _scoutHandler?.Update();
         }
 
         private void OnDestroy()
@@ -220,6 +225,7 @@ namespace OuterWildsAccess
             _nomaiTextHandler?.Cleanup();
             _signalscopeHandler?.Cleanup();
             _shipPilotHandler?.Cleanup();
+            _scoutHandler?.Cleanup();
             LoadManager.OnCompleteSceneLoad -= OnSceneLoaded;
             if (_languageListenerRegistered)
             {
@@ -561,6 +567,14 @@ namespace OuterWildsAccess
                 return;
             }
 
+            // O — scout probe status
+            if (Keyboard.current.oKey.wasPressedThisFrame)
+            {
+                DebugLogger.LogInput("O", "Scout status");
+                _scoutHandler?.ReadStatus();
+                return;
+            }
+
             // Delete — repeat last announcement
             if (Keyboard.current.deleteKey.wasPressedThisFrame)
             {
@@ -658,10 +672,10 @@ namespace OuterWildsAccess
                 return;
             }
 
-            // O — toggle auto-walk toward navigation target
-            if (Keyboard.current.oKey.wasPressedThisFrame)
+            // M — toggle auto-walk toward navigation target
+            if (Keyboard.current.mKey.wasPressedThisFrame)
             {
-                DebugLogger.LogInput("O", "AutoWalk toggle");
+                DebugLogger.LogInput("M", "AutoWalk toggle");
                 _autoWalkHandler?.Toggle();
                 return;
             }
