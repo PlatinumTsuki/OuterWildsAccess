@@ -30,12 +30,24 @@ namespace OuterWildsAccess
             public readonly string AstroObjectID;
             public readonly string DisplayName;
             public readonly List<ShipLogEntry> Entries;
+            public readonly int ExploredCount;
+            public readonly int RumoredCount;
 
             public PlanetData(string id, string name, List<ShipLogEntry> entries)
             {
                 AstroObjectID = id;
                 DisplayName   = name;
                 Entries       = entries;
+
+                ExploredCount = 0;
+                RumoredCount  = 0;
+                foreach (var e in entries)
+                {
+                    if (e.GetState() == ShipLogEntry.State.Explored)
+                        ExploredCount++;
+                    else
+                        RumoredCount++;
+                }
             }
         }
 
@@ -220,9 +232,20 @@ namespace OuterWildsAccess
             _level = Level.Planets;
             _planetIndex = 0;
 
-            string firstPlanet = Loc.Get("logreader_planet",
-                _planets[0].DisplayName, _planets[0].Entries.Count);
-            ScreenReader.Say(Loc.Get("logreader_open", _planets.Count) + " " + firstPlanet);
+            int totalEntries  = 0;
+            int totalExplored = 0;
+            int totalRumored  = 0;
+            foreach (var p in _planets)
+            {
+                totalEntries  += p.Entries.Count;
+                totalExplored += p.ExploredCount;
+                totalRumored  += p.RumoredCount;
+            }
+
+            string summary = Loc.Get("logreader_open_summary",
+                _planets.Count, totalEntries, totalExplored, totalRumored);
+            string firstPlanet = BuildPlanetAnnouncement(_planets[0]);
+            ScreenReader.Say(summary + " " + firstPlanet);
             DebugLogger.LogInput("F4", "ShipLogReader opened");
         }
 
@@ -283,15 +306,20 @@ namespace OuterWildsAccess
             return AstroObject.AstroObjectNameToString(name);
         }
 
+        private string BuildPlanetAnnouncement(PlanetData planet)
+        {
+            return Loc.Get("logreader_planet",
+                planet.DisplayName, planet.Entries.Count,
+                planet.ExploredCount, planet.RumoredCount);
+        }
+
         private void AnnounceCurrentItem()
         {
             switch (_level)
             {
                 case Level.Planets:
                     if (_planets.Count == 0) return;
-                    PlanetData planet = _planets[_planetIndex];
-                    ScreenReader.Say(Loc.Get("logreader_planet",
-                        planet.DisplayName, planet.Entries.Count));
+                    ScreenReader.Say(BuildPlanetAnnouncement(_planets[_planetIndex]));
                     break;
 
                 case Level.Entries:

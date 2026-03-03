@@ -440,9 +440,9 @@ namespace OuterWildsAccess
             _strings["teleport_success"]     = "Téléporté vers {0}.";
 
             // ===== SHIP LOG READER =====
-            _strings["logreader_open"]         = "Journal de bord. {0} planètes.";
+            _strings["logreader_open_summary"]  = "Journal de bord. {0} planètes, {1} entrées au total, {2} explorées, {3} rumeurs.";
             _strings["logreader_closed"]       = "Journal fermé.";
-            _strings["logreader_planet"]       = "{0}, {1} entrées";
+            _strings["logreader_planet"]       = "{0}, {1} entrées, {2} explorées, {3} rumeurs";
             _strings["logreader_entry"]        = "{0}, {1}, {2} faits";
             _strings["logreader_no_entries"]   = "Aucune découverte dans le journal.";
             _strings["logreader_no_facts"]     = "Aucun fait disponible.";
@@ -986,9 +986,9 @@ namespace OuterWildsAccess
             _strings["teleport_success"]     = "Teleported to {0}.";
 
             // ===== SHIP LOG READER =====
-            _strings["logreader_open"]         = "Ship log. {0} planets.";
+            _strings["logreader_open_summary"]  = "Ship log. {0} planets, {1} entries total, {2} explored, {3} rumored.";
             _strings["logreader_closed"]       = "Log closed.";
-            _strings["logreader_planet"]       = "{0}, {1} entries";
+            _strings["logreader_planet"]       = "{0}, {1} entries, {2} explored, {3} rumored";
             _strings["logreader_entry"]        = "{0}, {1}, {2} facts";
             _strings["logreader_no_entries"]   = "No discoveries in the log.";
             _strings["logreader_no_facts"]     = "No facts available.";
