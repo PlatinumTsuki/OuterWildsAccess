@@ -36,12 +36,17 @@ Outer Wilds Access is a comprehensive accessibility mod that makes [Outer Wilds]
 - Low resource alerts (automatic)
 - Obstacle collision beeps while walking
 
+### Teleportation
+- Warp to any selected navigation target on the same planet (T, max 500m)
+- **Why this exists**: auto-walk and audio guidance work well in open terrain, but they have real limitations right now — the A* pathfinding cannot handle all obstacles (tight corridors, complex geometry, stacked areas), the camera alignment sweep doesn't always find interactables inside trigger volumes, and slopes above 45° are impassable. Teleportation is a workaround so you're never stuck. Once pathfinding and guidance are fully reliable, this feature will be reconsidered.
+
 ### Quality of Life
+- In-game settings menu to toggle each feature (F6)
+- Bilingual: French and English, auto-detected from game language
+
 - Meditation available from the start (no need to complete the first loop)
 - Ghost matter protection (no instant death)
 - Peaceful ghosts in the DLC (optional)
-- In-game settings menu to toggle each feature (F6)
-- Bilingual: French and English, auto-detected from game language
 
 ## Controls
 
@@ -94,10 +99,10 @@ Press **F1** in-game for the full interactive help menu. Here are the essentials
 
 ## Known Limitations
 
-- **Auto-walk**: slopes above 45° are impassable; ghost matter detection may come too late in some areas
+- **Auto-walk & pathfinding**: the A* algorithm works on a 1m grid with 3D height propagation. It handles open terrain, slopes, and basic obstacles well, but struggles with tight indoor spaces, complex multi-level geometry, and areas where the walkable path isn't obvious from raycasts. Slopes above 45° are impassable. Ghost matter detection may come too late in some areas. When the path fails, use teleportation (T) as a fallback.
+- **Camera alignment**: after auto-walk arrives at a target, the mod sweeps the camera pitch to find interactables. This works for raycast-based interactions (InteractReceiver) but not for trigger volumes (InteractZone), where you need to physically enter the zone. Some objects like the model rocket cannot be interacted with automatically.
 - **Tutorial**: the game blocks NPC interactions until "Look around" and "Move" prompts are completed — follow the on-screen prompts first
 - **Autopilot**: you must be seated at the ship controls before selecting a destination
-- **Model rocket**: the miniature rocket interaction requires entering a trigger volume, which cannot be automated yet
 
 ## Troubleshooting
 
