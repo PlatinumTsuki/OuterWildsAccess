@@ -865,11 +865,11 @@ namespace OuterWildsAccess
             offsetDir = offsetDir.normalized;
 
             // Teleport 2m beside target, then raycast down to find real ground
-            Vector3 candidatePos = targetPos + offsetDir * 2f + upDir * 10f;
+            Vector3 candidatePos = targetPos + offsetDir * 2f + upDir * 3f;
             RaycastHit hit;
-            if (Physics.Raycast(candidatePos, -upDir, out hit, 20f,
+            if (Physics.Raycast(candidatePos, -upDir, out hit, 6f,
                     OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
-                candidatePos = hit.point + upDir * 1.5f;
+                candidatePos = hit.point + upDir * 1.2f;
             Vector3 teleportPos = candidatePos;
 
             // Face toward the target
