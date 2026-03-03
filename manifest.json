@@ -3,9 +3,8 @@
   "filename": "OuterWildsAccess.dll",
   "author": "PlatinumTsuki",
   "name": "Outer Wilds Access",
-  "description": "Screen reader accessibility mod for blind players. Audio navigation, auto-walk, autopilot, menus, dialogue, and Nomai text — via NVDA or JAWS.",
   "uniqueName": "PlatinumTsuki.OuterWildsAccess",
-  "version": "1.0.0-beta",
+  "version": "1.0.0",
   "owmlVersion": "2.15.5",
   "dependencies": []
 }
