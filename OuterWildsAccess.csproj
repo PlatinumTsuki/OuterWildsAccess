@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>OuterWildsAccess</AssemblyName>
+    <RootNamespace>OuterWildsAccess</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Exclude decompiled and template folders -->
+  <ItemGroup>
+    <Compile Remove="..\decompiled\**" />
+    <Compile Remove="..\templates\**" />
+  </ItemGroup>
+
+  <!-- OWML references (from local OWML installation) -->
+  <ItemGroup>
+    <Reference Include="OWML.Common">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OWML\OWML.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="OWML.ModHelper">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OWML\OWML.ModHelper.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OWML\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Unity references (from game Managed folder) -->
+  <ItemGroup>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OuterWilds_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OuterWilds_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OuterWilds_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OuterWilds_Data\Managed\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OuterWilds_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OWML\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Game assembly -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>C:\Users\assaa\Games\Outer Wilds\OuterWilds_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- After build: copy DLL and manifest to OWML mods folder -->
+  <Target Name="CopyToMods" AfterTargets="Build">
+    <MakeDir Directories="C:\Users\assaa\Games\Outer Wilds\OWML\Mods\OuterWildsAccess" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Users\assaa\Games\Outer Wilds\OWML\Mods\OuterWildsAccess\" />
+    <Copy SourceFiles="$(ProjectDir)manifest.json" DestinationFolder="C:\Users\assaa\Games\Outer Wilds\OWML\Mods\OuterWildsAccess\" />
+    <Copy SourceFiles="$(ProjectDir)default-config.json" DestinationFolder="C:\Users\assaa\Games\Outer Wilds\OWML\Mods\OuterWildsAccess\" />
+    <Message Text="Copie vers OWML Mods OK: OuterWildsAccess" Importance="High" />
+  </Target>
+
+</Project>

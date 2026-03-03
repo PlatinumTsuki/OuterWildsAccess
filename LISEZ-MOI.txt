@@ -1,0 +1,76 @@
+Outer Wilds Access — Mod d'accessibilité
+Version : 0.8.5 (bêta, en cours de test)
+Auteur : HikariFire
+=========================================
+
+CE MOD FAIT QUOI ?
+==================
+Il rend Outer Wilds jouable avec un lecteur d'écran (NVDA ou JAWS).
+Annonces vocales pour les menus, l'état du joueur, les dialogues,
+les lieux, la navigation, les obstacles, la matière fantôme, et plus encore.
+
+
+CE QU'IL FAUT AVOIR
+====================
+1. Outer Wilds (Steam ou Epic Games)
+2. Outer Wilds Mod Manager (télécharger sur https://outerwildsmods.com/)
+3. NVDA ou JAWS (lecteur d'écran)
+
+
+INSTALLATION — ÉTAPE PAR ÉTAPE
+================================
+
+ÉTAPE 1 — Installer le Mod Manager
+------------------------------------
+Télécharge et installe "Outer Wilds Mod Manager" depuis https://outerwildsmods.com/
+Lance-le une fois pour qu'il installe OWML automatiquement, puis ferme-le.
+
+ÉTAPE 2 — Copier les fichiers Tolk dans le dossier du jeu
+-----------------------------------------------------------
+Ouvre le dossier "2 - Dossier du jeu" de ce ZIP.
+Copie ces deux fichiers dans le dossier d'installation d'Outer Wilds
+(là où se trouve le fichier OuterWilds.exe) :
+  - Tolk.dll
+  - nvdaControllerClient64.dll
+
+ÉTAPE 3 — Copier le dossier du mod
+------------------------------------
+Ouvre le dossier "1 - Dossier Mods" de ce ZIP.
+Copie le dossier "OuterWildsAccess" (en entier) dans :
+  C:\Users\[ton nom]\AppData\Roaming\OuterWildsModManager\OWML\Mods\
+
+Pour accéder à AppData : ouvre l'explorateur, tape %AppData% dans la barre d'adresse.
+
+ÉTAPE 4 — Lancer le jeu
+-------------------------
+Lance Outer Wilds via le Mod Manager.
+Si tout est correct, ton lecteur d'écran annonce :
+"Outer Wilds Access chargé. F1 pour l'aide."
+
+
+TOUCHES PRINCIPALES
+====================
+F1          — Aide (liste toutes les touches)
+Inser       — Répéter la dernière annonce
+Début       — Scanner les objets autour (navigation)
+Page suiv.  — Objet suivant dans la liste
+Page préc.  — Objet précédent dans la liste
+Fin         — Naviguer vers l'objet sélectionné + activer balise audio
+Suppr       — Scanner les obstacles devant soi
+F8          — Menu réglages accessibilité
+F9          — Auto-marche vers la cible
+F10         — Annoncer la position actuelle
+F12         — Mode débogage
+
+
+PROBLÈMES FRÉQUENTS
+=====================
+- Rien n'est annoncé : vérifie que Tolk.dll est bien dans le dossier du jeu.
+- Le mod ne se charge pas : ouvre le Mod Manager et vérifie qu'OuterWildsAccess est activé.
+- Le jeu plante : contacte HikariFire avec le fichier de log dans
+  AppData\Roaming\OuterWildsModManager\OWML\Logs\
+
+
+CONTACT
+========
+Ce mod est en développement. Signale tout problème directement à HikariFire.

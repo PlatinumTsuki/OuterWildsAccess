@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+OuterWildsAccess.dll
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+Desktop.ini
