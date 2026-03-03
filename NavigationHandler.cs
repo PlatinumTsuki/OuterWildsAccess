@@ -424,6 +424,14 @@ namespace OuterWildsAccess
                 if (Vector3.Distance(playerPos, console.transform.position) > InteractRadius) continue;
                 _categories[2].Add(new NavTarget(Loc.Get("nav_model_rocket"), console.transform, isInteractable: true));
             }
+
+            // Nomai statue (MemoryUplinkTrigger — trigger volume, activates time loop)
+            foreach (var statue in Object.FindObjectsOfType<MemoryUplinkTrigger>())
+            {
+                if (!statue.gameObject.activeInHierarchy) continue;
+                if (Vector3.Distance(playerPos, statue.transform.position) > InteractRadius) continue;
+                _categories[2].Add(new NavTarget(Loc.Get("nav_nomai_statue"), statue.transform));
+            }
         }
 
         /// <summary>

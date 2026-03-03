@@ -2,6 +2,15 @@
 
 All notable changes to Outer Wilds Access are documented here.
 
+## 1.0.2 (2026-03-03)
+
+### Added
+- **Exploration stats in ship log**: opening the log now shows total entries, explored, and rumored counts globally and per planet
+- **Nomai statue as navigation target**: the memory uplink statue in the observatory now appears in the Interactables scan category
+
+### Fixed
+- **Teleportation impact deaths**: raycast now uses OWLayerMask.physicalMask to find real ground (ignores NPCs and triggers), starts higher (10m), and kills residual angular velocity on arrival
+
 ## 1.0.1 (2026-03-03)
 
 ### Added

@@ -864,8 +864,13 @@ namespace OuterWildsAccess
             }
             offsetDir = offsetDir.normalized;
 
-            // Teleport 2m beside target, 0.5m above ground for safety
-            Vector3 teleportPos = targetPos + offsetDir * 2f + upDir * 0.5f;
+            // Teleport 2m beside target, then raycast down to find real ground
+            Vector3 candidatePos = targetPos + offsetDir * 2f + upDir * 10f;
+            RaycastHit hit;
+            if (Physics.Raycast(candidatePos, -upDir, out hit, 20f,
+                    OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                candidatePos = hit.point + upDir * 1.5f;
+            Vector3 teleportPos = candidatePos;
 
             // Face toward the target
             Vector3 faceDir = -offsetDir;
@@ -874,6 +879,9 @@ namespace OuterWildsAccess
             WarpHelper.WarpAndMatchVelocity(
                 playerBody, teleportPos, faceRot,
                 groundBody, Vector3.zero);
+
+            // Kill any residual angular velocity to prevent tumbling on arrival
+            playerBody.SetAngularVelocity(Vector3.zero);
 
             ScreenReader.Say(Loc.Get("teleport_success", targetName));
             DebugLogger.Log(LogCategory.State, "Teleport",

@@ -259,6 +259,7 @@ namespace OuterWildsAccess
             // ===== NAVIGATION HANDLER =====
             _strings["nav_ship"]          = "Vaisseau";
             _strings["nav_model_rocket"]  = "Fusée modèle réduit";
+            _strings["nav_nomai_statue"]  = "Statue Nomaï";
             _strings["nav_nothing_found"] = "Aucun objet à proximité.";
             _strings["nav_scan_first"]    = "{0} objet(s) trouvé(s). {1}, {2} mètres.";
             _strings["nav_item"]          = "{0} sur {1} : {2}, {3} mètres.";
@@ -805,6 +806,7 @@ namespace OuterWildsAccess
             // ===== NAVIGATION HANDLER =====
             _strings["nav_ship"]          = "Ship";
             _strings["nav_model_rocket"]  = "Model rocket";
+            _strings["nav_nomai_statue"]  = "Nomai statue";
             _strings["nav_nothing_found"] = "No objects nearby.";
             _strings["nav_scan_first"]    = "{0} object(s) found. {1}, {2} meters.";
             _strings["nav_item"]          = "{0} of {1}: {2}, {3} meters.";
