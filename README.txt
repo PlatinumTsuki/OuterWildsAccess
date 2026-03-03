@@ -38,7 +38,7 @@ CONTROLS
 Press F1 in-game for the full help menu.
 
 AUTHOR
-HikariFire (PlatinumTsuki)
+PlatinumTsuki
 
 SOURCE CODE
 https://github.com/PlatinumTsuki/OuterWildsAccess

@@ -1,10 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/ow-mods/owml/dev/schemas/manifest_schema.json",
   "filename": "OuterWildsAccess.dll",
-  "author": "HikariFire",
+  "author": "PlatinumTsuki",
   "name": "Outer Wilds Access",
-  "description": "A comprehensive screen reader accessibility mod for blind and visually impaired players. Announces menus, game state, dialogue, locations, navigation, and hazards (including ghost matter) via NVDA or JAWS. Includes audio beacon, obstacle detection, auto-walk, and an in-game accessibility settings menu.",
-  "uniqueName": "HikariFire.OuterWildsAccess",
+  "description": "Screen reader accessibility mod for blind players. Audio navigation, auto-walk, autopilot, menus, dialogue, and Nomai text — via NVDA or JAWS.",
+  "uniqueName": "PlatinumTsuki.OuterWildsAccess",
   "version": "1.0.0-beta",
   "owmlVersion": "2.15.5",
   "dependencies": []

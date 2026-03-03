@@ -1,6 +1,6 @@
 Outer Wilds Access — Mod d'accessibilité
 Version : 0.8.5 (bêta, en cours de test)
-Auteur : HikariFire
+Auteur : PlatinumTsuki
 =========================================
 
 CE MOD FAIT QUOI ?
@@ -67,10 +67,10 @@ PROBLÈMES FRÉQUENTS
 =====================
 - Rien n'est annoncé : vérifie que Tolk.dll est bien dans le dossier du jeu.
 - Le mod ne se charge pas : ouvre le Mod Manager et vérifie qu'OuterWildsAccess est activé.
-- Le jeu plante : contacte HikariFire avec le fichier de log dans
+- Le jeu plante : contacte PlatinumTsuki avec le fichier de log dans
   AppData\Roaming\OuterWildsModManager\OWML\Logs\
 
 
 CONTACT
 ========
-Ce mod est en développement. Signale tout problème directement à HikariFire.
+Ce mod est en développement. Signale tout problème directement à PlatinumTsuki.

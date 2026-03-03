@@ -107,6 +107,6 @@ Press **F1** in-game for the full interactive help menu. Here are the essentials
 
 ## About
 
-Created by **HikariFire** — a blind gamer who wanted to explore the solar system.
+Created by **PlatinumTsuki** — a blind gamer who wanted to explore the solar system.
 
 If you encounter bugs or have suggestions, please [open an issue](https://github.com/PlatinumTsuki/OuterWildsAccess/issues).
