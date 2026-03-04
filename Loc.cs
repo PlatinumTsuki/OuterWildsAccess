@@ -332,28 +332,28 @@ namespace OuterWildsAccess
             _strings["location_near"]          = "près de {0}";
 
             // Planet / zone names
-            _strings["loc_sun"]                = "le Soleil";
-            _strings["loc_ash_twin"]           = "Jumeau des cendres";
-            _strings["loc_ember_twin"]         = "Jumeau des braises";
-            _strings["loc_hourglass_twins"]    = "Jumeaux des sabliers";
-            _strings["loc_timber_hearth"]      = "Foyer des Bois";
-            _strings["loc_brittle_hollow"]     = "Creux Friable";
-            _strings["loc_giants_deep"]        = "Profondeur du Géant";
-            _strings["loc_dark_bramble"]       = "Ronce Obscure";
+            _strings["loc_sun"]                = "Soleil";
+            _strings["loc_ash_twin"]           = "Sablière rouge";
+            _strings["loc_ember_twin"]         = "Sablière noire";
+            _strings["loc_hourglass_twins"]    = "Sablières";
+            _strings["loc_timber_hearth"]      = "Âtrebois";
+            _strings["loc_brittle_hollow"]     = "Cravité";
+            _strings["loc_giants_deep"]        = "Léviathé";
+            _strings["loc_dark_bramble"]       = "Sombronces";
             _strings["loc_comet"]              = "L'Intrus";
-            _strings["loc_quantum_moon"]       = "Lune Quantique";
-            _strings["loc_timber_moon"]        = "Attleroche";
-            _strings["loc_volcanic_moon"]      = "Lanterne du Creux";
-            _strings["loc_bramble_dimension"]  = "Dimension de la Ronce";
-            _strings["loc_probe_cannon"]       = "Canon à sondes orbital";
-            _strings["loc_eye"]                = "l'Œil de l'Univers";
-            _strings["loc_sun_station"]        = "Station Solaire";
-            _strings["loc_white_hole"]         = "Trou Blanc";
+            _strings["loc_quantum_moon"]       = "Lune quantique";
+            _strings["loc_timber_moon"]        = "La Rocaille";
+            _strings["loc_volcanic_moon"]      = "La Lanterne";
+            _strings["loc_bramble_dimension"]  = "Dimension de Sombronces";
+            _strings["loc_probe_cannon"]       = "Lance-sondes orbital";
+            _strings["loc_eye"]                = "L'Œil de l'univers";
+            _strings["loc_sun_station"]        = "Station solaire";
+            _strings["loc_white_hole"]         = "Trou blanc";
             _strings["loc_time_loop_device"]   = "Dispositif de boucle temporelle";
-            _strings["loc_vessel"]             = "le Vaisseau nomaï";
+            _strings["loc_vessel"]             = "Vaisseau nomaï";
             _strings["loc_vessel_dimension"]   = "Dimension du Vaisseau nomaï";
             _strings["loc_dream_world"]        = "Monde des Rêves";
-            _strings["loc_invisible_planet"]   = "Planète invisible";
+            _strings["loc_invisible_planet"]   = "L'Étranger";
 
             // Environment
             _strings["camera_enter_water"]     = "Caméra sous l'eau.";
@@ -901,7 +901,7 @@ namespace OuterWildsAccess
             _strings["location_near"]          = "near {0}";
 
             // Planet / zone names (official English names)
-            _strings["loc_sun"]                = "the Sun";
+            _strings["loc_sun"]                = "Sun";
             _strings["loc_ash_twin"]           = "Ash Twin";
             _strings["loc_ember_twin"]         = "Ember Twin";
             _strings["loc_hourglass_twins"]    = "Hourglass Twins";
@@ -911,18 +911,18 @@ namespace OuterWildsAccess
             _strings["loc_dark_bramble"]       = "Dark Bramble";
             _strings["loc_comet"]              = "The Interloper";
             _strings["loc_quantum_moon"]       = "Quantum Moon";
-            _strings["loc_timber_moon"]        = "Attlerock";
+            _strings["loc_timber_moon"]        = "The Attlerock";
             _strings["loc_volcanic_moon"]      = "Hollow's Lantern";
             _strings["loc_bramble_dimension"]  = "Bramble Dimension";
             _strings["loc_probe_cannon"]       = "Orbital Probe Cannon";
-            _strings["loc_eye"]                = "the Eye of the Universe";
+            _strings["loc_eye"]                = "Eye of the Universe";
             _strings["loc_sun_station"]        = "Sun Station";
             _strings["loc_white_hole"]         = "White Hole";
             _strings["loc_time_loop_device"]   = "Time Loop Device";
-            _strings["loc_vessel"]             = "the Nomai Vessel";
+            _strings["loc_vessel"]             = "Nomai Vessel";
             _strings["loc_vessel_dimension"]   = "Nomai Vessel Dimension";
             _strings["loc_dream_world"]        = "Dream World";
-            _strings["loc_invisible_planet"]   = "Invisible Planet";
+            _strings["loc_invisible_planet"]   = "The Stranger";
 
             // Environment
             _strings["camera_enter_water"]     = "Camera underwater.";
