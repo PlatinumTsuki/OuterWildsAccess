@@ -672,10 +672,10 @@ namespace OuterWildsAccess
                 return;
             }
 
-            // M — toggle auto-walk toward navigation target
-            if (Keyboard.current.mKey.wasPressedThisFrame)
+            // B — toggle auto-walk toward navigation target
+            if (Keyboard.current.bKey.wasPressedThisFrame)
             {
-                DebugLogger.LogInput("M", "AutoWalk toggle");
+                DebugLogger.LogInput("B", "AutoWalk toggle");
                 _autoWalkHandler?.Toggle();
                 return;
             }
@@ -822,11 +822,14 @@ namespace OuterWildsAccess
             ScreenReader.SayQueued(Loc.Get("backend_speech", backend));
         }
 
-        /// <summary>
-        /// Announces the time remaining in the current loop via screen reader.
-        /// Uses TimeLoop.GetSecondsRemaining() — only available in gameplay scenes.
-        /// </summary>
         private const float MaxTeleportDistance = 500f;
+        private const float TpProbeRadius  = 0.35f;  // SphereCast radius (match PathScanner)
+        private const float TpProbeUp      = 3f;     // start probe this far above candidate
+        private const float TpProbeLength  = 6f;     // max downward probe distance
+        private const float TpMaxSlope     = 45f;    // reject slopes steeper than this
+        private const float TpOffset       = 2f;     // horizontal offset from target
+        private const float TpFootClear    = 1.2f;   // clearance above ground for feet
+        private const int   TpCandidates   = 8;      // positions to try around target
 
         private void TeleportToSelected()
         {
@@ -866,32 +869,83 @@ namespace OuterWildsAccess
             if (groundBody != null)
                 upDir = (targetPos - groundBody.GetWorldCenterOfMass()).normalized;
 
-            // Offset direction: 2m beside the target (from current player direction)
-            Vector3 offsetDir = playerBody.GetPosition() - targetPos;
-            offsetDir = offsetDir - Vector3.Project(offsetDir, upDir);  // horizontal only
-            if (offsetDir.sqrMagnitude < 0.1f)
+            // Build base offset direction (from target toward player, horizontal)
+            Vector3 baseDir = playerBody.GetPosition() - targetPos;
+            baseDir = baseDir - Vector3.Project(baseDir, upDir);
+            if (baseDir.sqrMagnitude < 0.1f)
             {
-                // Player is directly above/below — pick arbitrary horizontal direction
-                offsetDir = Vector3.Cross(upDir, Vector3.forward);
-                if (offsetDir.sqrMagnitude < 0.01f)
-                    offsetDir = Vector3.Cross(upDir, Vector3.right);
+                baseDir = Vector3.Cross(upDir, Vector3.forward);
+                if (baseDir.sqrMagnitude < 0.01f)
+                    baseDir = Vector3.Cross(upDir, Vector3.right);
             }
-            offsetDir = offsetDir.normalized;
+            baseDir = baseDir.normalized;
 
-            // Teleport 2m beside target, then raycast down to find real ground
-            Vector3 candidatePos = targetPos + offsetDir * 2f + upDir * 3f;
-            RaycastHit hit;
-            if (Physics.Raycast(candidatePos, -upDir, out hit, 6f,
-                    OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
-                candidatePos = hit.point + upDir * 1.2f;
-            Vector3 teleportPos = candidatePos;
+            // Try up to 8 positions around the target (every 45°)
+            // First candidate is from the player's side, then rotates around
+            Vector3 bestPos = Vector3.zero;
+            Vector3 bestOffsetDir = baseDir;
+            bool foundSafe = false;
+
+            for (int i = 0; i < TpCandidates; i++)
+            {
+                float angle = i * (360f / TpCandidates);
+                Vector3 offsetDir = Quaternion.AngleAxis(angle, upDir) * baseDir;
+                Vector3 probeStart = targetPos + offsetDir * TpOffset + upDir * TpProbeUp;
+
+                // SphereCast down to find ground with player-width clearance
+                if (!Physics.SphereCast(probeStart, TpProbeRadius, -upDir, out RaycastHit hit,
+                    TpProbeLength - TpProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                    continue;  // no ground
+
+                // Slope check
+                float slopeAngle = Vector3.Angle(upDir, hit.normal);
+                if (slopeAngle > TpMaxSlope) continue;
+
+                Vector3 landingPoint = hit.point + upDir * TpFootClear;
+
+                // Hazard check (ghost matter, fire, electricity, etc.)
+                bool hasHazard = false;
+                var cols = Physics.OverlapSphere(hit.point + upDir * 0.5f, 0.5f,
+                    OWLayerMask.effectVolumeMask, QueryTriggerInteraction.Collide);
+                if (cols != null)
+                {
+                    for (int c = 0; c < cols.Length; c++)
+                    {
+                        var hv = cols[c].GetComponent<HazardVolume>();
+                        if (hv != null) { hasHazard = true; break; }
+
+                        var fv = cols[c].GetComponent<FluidVolume>();
+                        if (fv != null && fv.GetFluidType() != FluidVolume.Type.AIR
+                            && fv.GetFluidType() != FluidVolume.Type.TRACTOR_BEAM)
+                        {
+                            hasHazard = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasHazard) continue;
+
+                // This spot is safe
+                bestPos = landingPoint;
+                bestOffsetDir = offsetDir;
+                foundSafe = true;
+                break;  // take first safe spot (closest to player's side)
+            }
+
+            if (!foundSafe)
+            {
+                ScreenReader.Say(Loc.Get("teleport_unsafe"));
+                DebugLogger.Log(LogCategory.State, "Teleport",
+                    $"No safe landing near {targetName} — all {TpCandidates} candidates rejected");
+                return;
+            }
 
             // Face toward the target
-            Vector3 faceDir = -offsetDir;
+            Vector3 faceDir = -bestOffsetDir;
             Quaternion faceRot = Quaternion.LookRotation(faceDir, upDir);
 
             WarpHelper.WarpAndMatchVelocity(
-                playerBody, teleportPos, faceRot,
+                playerBody, bestPos, faceRot,
                 groundBody, Vector3.zero);
 
             // Kill any residual angular velocity to prevent tumbling on arrival

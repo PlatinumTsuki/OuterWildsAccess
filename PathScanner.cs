@@ -26,16 +26,20 @@ namespace OuterWildsAccess
     {
         #region Constants
 
-        private const float CellSize       = 1f;    // metres per grid cell
+        private const float DefaultCellSize = 1f;   // metres per grid cell (close range)
+        private const float LargeCellSize   = 2f;   // metres per grid cell (long range)
+        private const float LargeCellThreshold = 40f; // use large cells above this distance
         private const float ProbeHeight    = 12f;   // cast from this far above reference height
         private const float ProbeLength    = 24f;   // max downward ray length
+        private const float ProbeRadius    = 0.35f; // SphereCast radius (slightly < player 0.46m)
         private const float MaxSlope       = 45f;   // degrees — game limit
         private const float WallCheckH     = 0.9f;  // chest-height wall check
         private const float JumpClearH     = 1.2f;  // above this = not jumpable
         private const float MaxStepHeight  = 3f;    // max vertical gap between adjacent cells
         private const float HeightBand     = 3f;    // height bucket granularity (metres)
         private const float GoalHeightTol  = 4f;    // accept goal within this vertical tolerance
-        private const int   MaxExplored    = 4000;  // A* cell budget
+        private const int   MaxExplored    = 12000; // A* cell budget (tripled for complex terrain)
+        private const float DiagCost       = 1.414f; // diagonal movement cost multiplier
 
         #endregion
 
@@ -46,6 +50,7 @@ namespace OuterWildsAccess
         private Vector3 _forward;
         private Vector3 _up;
         private float   _targetHeight;  // height of target along _up relative to _origin
+        private float   _cellSize = DefaultCellSize;  // current cell size (adaptive)
 
         #endregion
 
@@ -75,6 +80,7 @@ namespace OuterWildsAccess
         private Vector3             _cachePlayerPos;
         private Vector3             _cacheTargetPos;
         private List<PathWaypoint>  _cacheResult;
+        private float               _cacheCellSize;
 
         #endregion
 
@@ -88,9 +94,21 @@ namespace OuterWildsAccess
         /// </summary>
         public List<PathWaypoint> FindPath(Vector3 playerPos, Vector3 playerUp, Vector3 targetPos)
         {
+            // Adaptive cell size — large cells for long distances, small for close range
+            Vector3 toTargetRaw = targetPos - playerPos;
+            Vector3 flatRaw = toTargetRaw - Vector3.Project(toTargetRaw, playerUp.normalized);
+            float horizDistRaw = flatRaw.magnitude;
+            // Hysteresis: switch up at 45m, switch down at 35m
+            if (horizDistRaw > 45f)
+                _cellSize = LargeCellSize;
+            else if (horizDistRaw < 35f)
+                _cellSize = DefaultCellSize;
+            // else keep current _cellSize
+
             // Return cached result if still fresh and positions haven't changed much
             float age = Time.time - _cacheTime;
             if (_cacheResult != null && age < CacheMaxAge
+                && _cacheCellSize == _cellSize
                 && (playerPos - _cachePlayerPos).sqrMagnitude < CachePosTol * CachePosTol
                 && (targetPos - _cacheTargetPos).sqrMagnitude < CachePosTol * CachePosTol)
             {
@@ -148,9 +166,9 @@ namespace OuterWildsAccess
             float           bestClosestDist = startHeuristic;
             int             explored        = 0;
 
-            // 4-connected neighbors (avoids diagonal wall-clipping issues)
-            int[] dx = { 1, -1, 0, 0 };
-            int[] dz = { 0, 0, 1, -1 };
+            // 8-connected neighbors: 0-3 cardinal, 4-7 diagonal
+            int[] dx = { 1, -1, 0, 0, 1, -1, 1, -1 };
+            int[] dz = { 0, 0, 1, -1, 1, 1, -1, -1 };
 
             while (open.Count > 0 && explored < MaxExplored)
             {
@@ -185,11 +203,20 @@ namespace OuterWildsAccess
                         BuildPath(parent, parentJump, ck));
                 }
 
-                // Expand 4-connected neighbors
-                for (int i = 0; i < 4; i++)
+                // Expand 8-connected neighbors
+                for (int i = 0; i < 8; i++)
                 {
                     int nx = cur.x + dx[i];
                     int nz = cur.z + dz[i];
+                    bool isDiag = i >= 4;
+
+                    // Diagonal wall-clip prevention: both adjacent cardinal cells must be walkable
+                    if (isDiag)
+                    {
+                        CellInfo adj1 = ScanCell(nx, cur.z, curCell.Height);
+                        CellInfo adj2 = ScanCell(cur.x, nz, curCell.Height);
+                        if (!adj1.Walkable || !adj2.Walkable) continue;
+                    }
 
                     // Scan neighbor using current cell's ground height as reference
                     CellInfo ni = ScanCell(nx, nz, curCell.Height);
@@ -205,7 +232,7 @@ namespace OuterWildsAccess
                     if (edge == 1) continue; // impassable wall
 
                     bool  jump = (edge == 2);
-                    float cost = CellSize;
+                    float cost = isDiag ? _cellSize * DiagCost : _cellSize;
                     if (jump) cost += 1.5f;      // prefer non-jump paths
                     if (ni.HasHazard) cost += 50f; // heavily penalize hazards
 
@@ -240,6 +267,7 @@ namespace OuterWildsAccess
             _cachePlayerPos = playerPos;
             _cacheTargetPos = targetPos;
             _cacheResult    = result;
+            _cacheCellSize  = _cellSize;
             return result;
         }
 
@@ -250,8 +278,8 @@ namespace OuterWildsAccess
         /// <summary>3D Euclidean heuristic including vertical distance.</summary>
         private float Heuristic(int x1, int z1, float h1, int x2, int z2, float h2)
         {
-            float ddx = (x2 - x1) * CellSize;
-            float ddz = (z2 - z1) * CellSize;
+            float ddx = (x2 - x1) * _cellSize;
+            float ddz = (z2 - z1) * _cellSize;
             float ddy = h2 - h1;
             return Mathf.Sqrt(ddx * ddx + ddz * ddz + ddy * ddy);
         }
@@ -259,14 +287,14 @@ namespace OuterWildsAccess
         private void WorldToGrid(Vector3 pos, out int x, out int z)
         {
             Vector3 d = pos - _origin;
-            x = Mathf.RoundToInt(Vector3.Dot(d, _right) / CellSize);
-            z = Mathf.RoundToInt(Vector3.Dot(d, _forward) / CellSize);
+            x = Mathf.RoundToInt(Vector3.Dot(d, _right) / _cellSize);
+            z = Mathf.RoundToInt(Vector3.Dot(d, _forward) / _cellSize);
         }
 
         /// <summary>Returns the horizontal world position of a grid cell (on the grid plane).</summary>
         private Vector3 GridToWorld(int x, int z)
         {
-            return _origin + _right * (x * CellSize) + _forward * (z * CellSize);
+            return _origin + _right * (x * _cellSize) + _forward * (z * _cellSize);
         }
 
         #endregion
@@ -290,8 +318,8 @@ namespace OuterWildsAccess
             Vector3 horizPos = GridToWorld(x, z);
             Vector3 probe    = horizPos + _up * (refHeight + ProbeHeight);
 
-            if (Physics.Raycast(probe, -_up, out RaycastHit hit, ProbeLength,
-                OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+            if (Physics.SphereCast(probe, ProbeRadius, -_up, out RaycastHit hit,
+                ProbeLength - ProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
             {
                 c.Walkable  = Vector3.Angle(_up, hit.normal) <= MaxSlope;
                 c.GroundPos = hit.point;
@@ -335,15 +363,17 @@ namespace OuterWildsAccess
             float vert = Mathf.Abs(Vector3.Dot(diff, _up));
             if (vert > MaxStepHeight) return 1;
 
-            // Chest-height wall check
+            // Chest-height wall check (SphereCast for player width)
             Vector3 fromPt = a.GroundPos + _up * WallCheckH;
             Vector3 toPt   = b.GroundPos + _up * WallCheckH;
             Vector3 dir    = toPt - fromPt;
             float   dist   = dir.magnitude;
             if (dist < 0.01f) return 0;
 
-            bool wallHit = Physics.Raycast(fromPt, dir / dist, dist,
-                OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore);
+            float castDist = dist - ProbeRadius;
+            if (castDist < 0f) castDist = 0f;
+            bool wallHit = Physics.SphereCast(fromPt, ProbeRadius, dir / dist, out _,
+                castDist, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore);
 
             if (!wallHit) return 0; // clear passage
 
@@ -353,8 +383,10 @@ namespace OuterWildsAccess
             Vector3 dirHigh  = toHigh - fromHigh;
             float   distHigh = dirHigh.magnitude;
 
-            bool highHit = Physics.Raycast(fromHigh, dirHigh / distHigh, distHigh,
-                OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore);
+            float castDistHigh = distHigh - ProbeRadius;
+            if (castDistHigh < 0f) castDistHigh = 0f;
+            bool highHit = Physics.SphereCast(fromHigh, ProbeRadius, dirHigh / distHigh, out _,
+                castDistHigh, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore);
 
             return highHit ? (byte)1 : (byte)2;
         }
@@ -409,14 +441,16 @@ namespace OuterWildsAccess
                     }
                     if (anyJump) break;
 
-                    // Line-of-sight check at chest height
+                    // Line-of-sight check at chest height (SphereCast for player width)
                     Vector3 from = raw[current].Position + _up * WallCheckH;
                     Vector3 to   = raw[i].Position + _up * WallCheckH;
                     Vector3 dir  = to - from;
                     float   dist = dir.magnitude;
+                    float   castDist = dist - ProbeRadius;
+                    if (castDist < 0f) castDist = 0f;
 
-                    if (dist > 0.01f && !Physics.Raycast(from, dir / dist, dist,
-                        OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                    if (dist > 0.01f && !Physics.SphereCast(from, ProbeRadius, dir / dist,
+                        out _, castDist, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
                     {
                         furthest = i;
                     }

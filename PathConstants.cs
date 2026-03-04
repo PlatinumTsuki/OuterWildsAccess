@@ -16,6 +16,6 @@ namespace OuterWildsAccess
         public const float WaypointReachDist = 1.5f;
 
         /// <summary>Below this horizontal distance, skip A* and walk straight toward the target.</summary>
-        public const float DirectPathDist = 8f;
+        public const float DirectPathDist = 2f;
     }
 }

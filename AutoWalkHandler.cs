@@ -23,16 +23,20 @@ namespace OuterWildsAccess
         private const float InputThreshold    = 0.25f;
 
         // Periodic path rescan
-        private const float RescanInterval    = 3f;    // seconds between automatic rescans
+        private const float RescanInterval    = 2f;    // seconds between automatic rescans
 
         // Movement tracking — detects stuck state
-        private const float MoveCheckInterval = 1f;    // check movement every 1 s (was 2s)
-        private const float MoveThreshold     = 0.1f;  // less than this in 1 s = stuck
-        private const int   MaxStuckRescans   = 3;     // rescan path up to 3 times, then stop
+        private const float MoveCheckInterval = 0.5f;  // check movement every 0.5 s
+        private const float MoveThreshold     = 0.05f; // less than this in 0.5 s = stuck
+        private const int   MaxStuckRescans   = 4;     // rescan path up to 4 times, then stop
+
+        // Path segmentation for long distances
+        private const float SegmentDistance   = 50f;   // max A* segment length
 
         // Jump timing (A* planned jumps only)
         private const float JumpTriggerDist    = 3f;   // jump when within this distance of A* jump waypoint
         private const float PostJumpRescanDelay = 1f;   // rescan path this long after a jump
+        private const float JumpHorizBoost     = 4f;   // horizontal velocity added at jump (m/s)
 
         // Post-arrival alignment
         private const float AlignTimeout   = 2f;
@@ -52,6 +56,11 @@ namespace OuterWildsAccess
         // Hazard and fluid detection
         private HazardDetector _hazardDetector;
         private FluidDetector  _fluidDetector;
+        private bool           _inWater;
+
+        // Path segmentation
+        private bool    _segmented;
+        private Vector3 _segmentGoal;
 
         // Post-arrival alignment + pitch sweep
         private bool   _postArrivalAligning = false;
@@ -67,10 +76,11 @@ namespace OuterWildsAccess
         private float _rescanTimer = 0f;
 
         // Movement tracking — stuck detection for rescan/stop
-        private Vector3 _moveCheckPos    = Vector3.zero;
-        private float   _moveCheckTime   = 0f;
-        private bool    _isStuck         = false;
-        private int     _stuckRescanCount = 0;
+        private Vector3 _moveCheckPos        = Vector3.zero;
+        private float   _moveCheckTime       = 0f;
+        private bool    _isStuck             = false;
+        private int     _stuckRescanCount    = 0;
+        private int     _lastCheckWaypointIndex = 0;
 
         // Ground state — faster stuck/fall detection via game events
         private PlayerCharacterController _playerController;
@@ -290,7 +300,10 @@ namespace OuterWildsAccess
             _moveCheckTime       = Time.time;
             _isStuck             = false;
             _stuckRescanCount    = 0;
+            _lastCheckWaypointIndex = 0;
             _lastJumpTime        = 0f;
+            _inWater             = false;
+            _segmented           = false;
 
             // Subscribe to hazard/fluid events
             var playerDetector = Locator.GetPlayerDetector();
@@ -300,7 +313,10 @@ namespace OuterWildsAccess
 
             _fluidDetector = playerDetector?.GetComponent<FluidDetector>();
             if (_fluidDetector != null)
+            {
                 _fluidDetector.OnEnterFluidType += OnFluidEntered;
+                _fluidDetector.OnExitFluidType  += OnFluidExited;
+            }
 
             // Subscribe to ground events for faster stuck/fall detection
             _playerController = Locator.GetPlayerController();
@@ -363,8 +379,19 @@ namespace OuterWildsAccess
                 {
                     _fluidDetector = pd?.GetComponent<FluidDetector>();
                     if (_fluidDetector != null)
+                    {
                         _fluidDetector.OnEnterFluidType += OnFluidEntered;
+                        _fluidDetector.OnExitFluidType  += OnFluidExited;
+                    }
                 }
+            }
+
+            // ── 3b. Water depth check — stop if submerged or in undertow ────
+            if (_inWater && (PlayerState.IsCameraUnderwater() || PlayerState.InUndertowVolume()))
+            {
+                ScreenReader.Say(Loc.Get("auto_walk_hazard", Loc.Get("fluid_deep_water")), SpeechPriority.Now);
+                StopWalk(announce: false);
+                return;
             }
 
             // ── 4. Distance check — arrived? ─────────────────────────────────
@@ -473,7 +500,7 @@ namespace OuterWildsAccess
                     _lastJumpTime = 0f;
                 }
 
-                // ── 8. Compute path if needed ────────────────────────────────
+                // ── 8. Compute path if needed (with segmentation for long distances)
                 if (_path == null)
                 {
                     if (horizDist < PathConstants.DirectPathDist)
@@ -484,10 +511,19 @@ namespace OuterWildsAccess
                             Position  = _target.position,
                             NeedsJump = false
                         });
+                        _segmented = false;
+                    }
+                    else if (horizDist > SegmentDistance)
+                    {
+                        // Segment: compute A* toward intermediate goal at SegmentDistance
+                        _segmentGoal = playerTr.position + horizVec.normalized * SegmentDistance;
+                        _path = _pathScanner.FindPath(playerTr.position, up, _segmentGoal);
+                        _segmented = true;
                     }
                     else
                     {
                         _path = _pathScanner.FindPath(playerTr.position, up, _target.position);
+                        _segmented = false;
                     }
                     _waypointIndex = 0;
 
@@ -500,10 +536,12 @@ namespace OuterWildsAccess
                             Position  = _target.position,
                             NeedsJump = false
                         });
+                        _segmented = false;
                     }
 
                     DebugLogger.Log(LogCategory.State, "AutoWalk",
-                        "Path: " + _path.Count + " waypoints, dist=" + horizDist.ToString("F1") + "m");
+                        "Path: " + _path.Count + " waypoints, dist=" + horizDist.ToString("F1") + "m"
+                        + (_segmented ? " (segment)" : ""));
                 }
 
                 // ── 9. Advance past reached waypoints ────────────────────────
@@ -515,33 +553,77 @@ namespace OuterWildsAccess
                     _waypointIndex++;
                 }
 
-                // All waypoints consumed → rescan immediately in this frame
+                // All waypoints consumed → compute next segment or rescan
                 if (_waypointIndex >= _path.Count)
                 {
-                    if (horizDist < PathConstants.DirectPathDist)
+                    if (_segmented)
                     {
-                        _path = new List<PathWaypoint>();
-                        _path.Add(new PathWaypoint
+                        // Segment consumed — immediately compute next segment
+                        _path = null;  // triggers section 8 recompute this frame
+                        _waypointIndex = 0;
+                        _rescanTimer = Time.time + RescanInterval;
+
+                        // Re-enter section 8 logic inline for immediate response
+                        if (horizDist < PathConstants.DirectPathDist)
                         {
-                            Position  = _target.position,
-                            NeedsJump = false
-                        });
+                            _path = new List<PathWaypoint>();
+                            _path.Add(new PathWaypoint
+                            {
+                                Position  = _target.position,
+                                NeedsJump = false
+                            });
+                            _segmented = false;
+                        }
+                        else if (horizDist > SegmentDistance)
+                        {
+                            _segmentGoal = playerTr.position + horizVec.normalized * SegmentDistance;
+                            _path = _pathScanner.FindPath(playerTr.position, up, _segmentGoal);
+                            _segmented = true;
+                        }
+                        else
+                        {
+                            _path = _pathScanner.FindPath(playerTr.position, up, _target.position);
+                            _segmented = false;
+                        }
+
+                        if (_path == null || _path.Count == 0)
+                        {
+                            _path = new List<PathWaypoint>();
+                            _path.Add(new PathWaypoint
+                            {
+                                Position  = _target.position,
+                                NeedsJump = false
+                            });
+                            _segmented = false;
+                        }
                     }
                     else
                     {
-                        _path = _pathScanner.FindPath(playerTr.position, up, _target.position);
+                        if (horizDist < PathConstants.DirectPathDist)
+                        {
+                            _path = new List<PathWaypoint>();
+                            _path.Add(new PathWaypoint
+                            {
+                                Position  = _target.position,
+                                NeedsJump = false
+                            });
+                        }
+                        else
+                        {
+                            _path = _pathScanner.FindPath(playerTr.position, up, _target.position);
+                        }
+
+                        if (_path == null || _path.Count == 0)
+                        {
+                            _path = new List<PathWaypoint>();
+                            _path.Add(new PathWaypoint
+                            {
+                                Position  = _target.position,
+                                NeedsJump = false
+                            });
+                        }
                     }
                     _waypointIndex = 0;
-
-                    if (_path == null || _path.Count == 0)
-                    {
-                        _path = new List<PathWaypoint>();
-                        _path.Add(new PathWaypoint
-                        {
-                            Position  = _target.position,
-                            NeedsJump = false
-                        });
-                    }
                     _rescanTimer = Time.time + RescanInterval;
                     // Fall through — rotation will use the new path this frame
                 }
@@ -588,16 +670,18 @@ namespace OuterWildsAccess
                 }
                 _wasGrounded = grounded;
 
-                // 10c. Movement distance check (every 1s) — stuck detection
+                // 10c. Movement distance check (every 0.5s) — stuck detection
                 if (_moveCheckPos == Vector3.zero)
                     _moveCheckPos = playerTr.position;
 
                 if (Time.time - _moveCheckTime >= MoveCheckInterval)
                 {
                     float moved = Vector3.Distance(playerTr.position, _moveCheckPos);
-                    _isStuck       = moved < MoveThreshold;
+                    // Dual criterion: barely moved AND still on same waypoint
+                    _isStuck       = moved < MoveThreshold && _waypointIndex == _lastCheckWaypointIndex;
                     _moveCheckPos  = playerTr.position;
                     _moveCheckTime = Time.time;
+                    _lastCheckWaypointIndex = _waypointIndex;
 
                     if (_isStuck)
                     {
@@ -629,10 +713,18 @@ namespace OuterWildsAccess
                     Vector3 toJumpHoriz = toJumpWp - Vector3.Project(toJumpWp, up);
                     if (toJumpHoriz.magnitude <= JumpTriggerDist)
                     {
-                        RequestJump();
-                        _jumpCooldown = 1.5f;
-                        _lastJumpTime = Time.time;
+                        FireJumpWithBoost(playerTr, up, toJumpHoriz);
                     }
+                }
+
+                // ── 12. Game jump prompt — jump when the game says to ──────
+                if (_jumpCooldown <= 0f && _jumpEnabled && CheckJumpPromptVisible())
+                {
+                    Vector3 toWpDir = wp.Position - playerTr.position;
+                    Vector3 toWpH   = toWpDir - Vector3.Project(toWpDir, up);
+                    FireJumpWithBoost(playerTr, up, toWpH);
+                    DebugLogger.Log(LogCategory.State, "AutoWalk",
+                        "Jump triggered by game prompt");
                 }
 
                 // ── 13. Walk toward current waypoint ─────────────────────────
@@ -786,6 +878,22 @@ namespace OuterWildsAccess
                 "Jump requested (charge=" + charge.ToString("F2") + ")");
         }
 
+        /// <summary>Fires a jump and adds horizontal boost toward the waypoint.</summary>
+        private void FireJumpWithBoost(Transform playerTr, Vector3 up, Vector3 horizDir)
+        {
+            RequestJump();
+            _jumpCooldown = 1.5f;
+            _lastJumpTime = Time.time;
+
+            var owBody = Locator.GetPlayerBody();
+            if (owBody != null && horizDir.sqrMagnitude > 0.01f)
+            {
+                owBody.AddVelocityChange(horizDir.normalized * JumpHorizBoost);
+                DebugLogger.Log(LogCategory.State, "AutoWalk",
+                    "Jump horizontal boost applied");
+            }
+        }
+
         private void StopWalk(bool announce)
         {
             _isActive            = false;
@@ -801,9 +909,12 @@ namespace OuterWildsAccess
             _waypointIndex       = 0;
             _lastJumpTime        = 0f;
             _stuckRescanCount    = 0;
+            _lastCheckWaypointIndex = 0;
             _airborneTime        = 0f;
             _wasGrounded         = true;
             _playerController    = null;
+            _inWater             = false;
+            _segmented           = false;
 
             if (_hazardDetector != null)
             {
@@ -813,6 +924,7 @@ namespace OuterWildsAccess
             if (_fluidDetector != null)
             {
                 _fluidDetector.OnEnterFluidType -= OnFluidEntered;
+                _fluidDetector.OnExitFluidType  -= OnFluidExited;
                 _fluidDetector = null;
             }
 
@@ -947,10 +1059,44 @@ namespace OuterWildsAccess
         private void OnFluidEntered(FluidVolume.Type fluidType)
         {
             if (!_isActive) return;
-            string name = GetFluidName(fluidType);
-            if (name == null) return;
-            ScreenReader.Say(Loc.Get("auto_walk_hazard", name), SpeechPriority.Now);
-            StopWalk(announce: false);
+
+            switch (fluidType)
+            {
+                case FluidVolume.Type.WATER:
+                    // Smart water: check if dangerous (camera submerged or undertow)
+                    if (PlayerState.IsCameraUnderwater() || PlayerState.InUndertowVolume())
+                    {
+                        ScreenReader.Say(Loc.Get("auto_walk_hazard", Loc.Get("fluid_deep_water")), SpeechPriority.Now);
+                        StopWalk(announce: false);
+                    }
+                    else
+                    {
+                        // Shallow water — keep walking
+                        _inWater = true;
+                        ScreenReader.Say(Loc.Get("auto_walk_wading"));
+                    }
+                    return;
+
+                case FluidVolume.Type.SAND:
+                case FluidVolume.Type.PLASMA:
+                case FluidVolume.Type.GEYSER:
+                    ScreenReader.Say(Loc.Get("auto_walk_hazard", GetFluidName(fluidType)), SpeechPriority.Now);
+                    StopWalk(announce: false);
+                    return;
+
+                case FluidVolume.Type.TRACTOR_BEAM:
+                    ScreenReader.Say(Loc.Get("fluid_tractor"));
+                    return; // don't stop
+
+                default:
+                    return; // AIR, CLOUD, FOG — ignore
+            }
+        }
+
+        private void OnFluidExited(FluidVolume.Type fluidType)
+        {
+            if (fluidType == FluidVolume.Type.WATER)
+                _inWater = false;
         }
 
         private static string GetFluidName(FluidVolume.Type type)

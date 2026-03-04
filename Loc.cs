@@ -159,7 +159,7 @@ namespace OuterWildsAccess
             _strings["help_key_j"]          = "J";
             _strings["help_key_k"]          = "K";
             _strings["help_key_l"]          = "L";
-            _strings["help_key_m"]          = "M";
+            _strings["help_key_m"]          = "B";
             _strings["help_key_t"]          = "T";
             _strings["help_key_u"]          = "U";
 
@@ -382,6 +382,8 @@ namespace OuterWildsAccess
             _strings["fluid_plasma"]            = "Plasma solaire";
             _strings["fluid_geyser"]            = "Geyser";
             _strings["fluid_tractor"]           = "Faisceau tracteur";
+            _strings["auto_walk_wading"]        = "Eau peu profonde — marche en cours.";
+            _strings["fluid_deep_water"]        = "Eau profonde";
             _strings["auto_walk_out_of_reach"]  = "{0} est hors de portée — trop haut ou trop bas.";
             _strings["auto_walk_on"]            = "Auto-marche vers {0}.";
             _strings["auto_walk_off"]           = "Auto-marche arrêtée.";
@@ -441,6 +443,7 @@ namespace OuterWildsAccess
             _strings["teleport_too_far"]     = "Cible trop éloignée pour la téléportation.";
             _strings["teleport_not_on_foot"] = "Téléportation disponible uniquement à pied.";
             _strings["teleport_success"]     = "Téléporté vers {0}.";
+            _strings["teleport_unsafe"]     = "Zone d'atterrissage dangereuse — téléportation annulée.";
 
             // ===== SHIP LOG READER =====
             _strings["logreader_open_summary"]  = "Journal de bord. {0} planètes, {1} entrées au total, {2} explorées, {3} rumeurs.";
@@ -725,7 +728,7 @@ namespace OuterWildsAccess
             _strings["help_key_j"]          = "J";
             _strings["help_key_k"]          = "K";
             _strings["help_key_l"]          = "L";
-            _strings["help_key_m"]          = "M";
+            _strings["help_key_m"]          = "B";
             _strings["help_key_t"]          = "T";
             _strings["help_key_u"]          = "U";
 
@@ -948,6 +951,8 @@ namespace OuterWildsAccess
             _strings["fluid_plasma"]            = "Solar plasma";
             _strings["fluid_geyser"]            = "Geyser";
             _strings["fluid_tractor"]           = "Tractor beam";
+            _strings["auto_walk_wading"]        = "Shallow water — still walking.";
+            _strings["fluid_deep_water"]        = "Deep water";
             _strings["auto_walk_out_of_reach"]  = "{0} is out of reach — too high or too low.";
             _strings["auto_walk_on"]            = "Auto-walking to {0}.";
             _strings["auto_walk_off"]           = "Auto-walk stopped.";
@@ -1007,6 +1012,7 @@ namespace OuterWildsAccess
             _strings["teleport_too_far"]     = "Target too far for teleportation.";
             _strings["teleport_not_on_foot"] = "Teleportation only available on foot.";
             _strings["teleport_success"]     = "Teleported to {0}.";
+            _strings["teleport_unsafe"]     = "Unsafe landing zone — teleportation cancelled.";
 
             // ===== SHIP LOG READER =====
             _strings["logreader_open_summary"]  = "Ship log. {0} planets, {1} entries total, {2} explored, {3} rumored.";

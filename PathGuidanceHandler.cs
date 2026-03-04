@@ -41,6 +41,7 @@ namespace OuterWildsAccess
 
         // Path following — ArrivalDist, ArrivalVertMax, WaypointReachDist from PathConstants
         private const float RescanInterval     = 0.5f;    // seconds between A* rescans
+        private const float SegmentDistance    = 50f;     // max A* segment for long distances
 
         #endregion
 
@@ -62,6 +63,7 @@ namespace OuterWildsAccess
         private List<PathWaypoint>   _path;
         private int                  _waypointIndex;
         private float                _rescanTimer;
+        private bool                 _segmented;
 
         // Tick timing
         private float _tickTimer;
@@ -144,6 +146,7 @@ namespace OuterWildsAccess
             _target     = null;
             _targetName = string.Empty;
             _path       = null;
+            _segmented  = false;
             DebugLogger.LogState("[PathGuidanceHandler] Target cleared.");
         }
 
@@ -184,8 +187,9 @@ namespace OuterWildsAccess
         public void Stop(bool announce)
         {
             if (!_isActive) return;
-            _isActive = false;
-            _path     = null;
+            _isActive  = false;
+            _path      = null;
+            _segmented = false;
             if (announce)
                 ScreenReader.Say(Loc.Get("guidance_off"));
             DebugLogger.LogState("[PathGuidanceHandler] Stopped.");
@@ -249,10 +253,20 @@ namespace OuterWildsAccess
                 _rescanTimer = Time.time + RescanInterval;
             }
 
-            // ── Compute path if needed (always A* for precision) ─────
+            // ── Compute path if needed (with segmentation for long distances)
             if (_path == null)
             {
-                _path = _pathScanner.FindPath(playerTr.position, up, _target.position);
+                if (horizDist > SegmentDistance)
+                {
+                    Vector3 segGoal = playerTr.position + horizVec.normalized * SegmentDistance;
+                    _path = _pathScanner.FindPath(playerTr.position, up, segGoal);
+                    _segmented = true;
+                }
+                else
+                {
+                    _path = _pathScanner.FindPath(playerTr.position, up, _target.position);
+                    _segmented = false;
+                }
                 _waypointIndex = 0;
 
                 if (_path == null || _path.Count == 0)
@@ -262,10 +276,12 @@ namespace OuterWildsAccess
                     {
                         new PathWaypoint { Position = _target.position, NeedsJump = false }
                     };
+                    _segmented = false;
                 }
 
                 DebugLogger.Log(LogCategory.State, "Guidance",
-                    "Path: " + _path.Count + " waypoints, dist=" + horizDist.ToString("F1") + "m");
+                    "Path: " + _path.Count + " waypoints, dist=" + horizDist.ToString("F1") + "m"
+                    + (_segmented ? " (segment)" : ""));
             }
 
             // ── Advance past reached waypoints ───────────────────────
@@ -277,12 +293,50 @@ namespace OuterWildsAccess
                 _waypointIndex++;
             }
 
-            // All waypoints consumed -> rescan next frame
+            // All waypoints consumed → recompute immediately
             if (_waypointIndex >= _path.Count)
             {
                 _path        = null;
                 _rescanTimer = Time.time + RescanInterval;
-                return;
+                if (_segmented)
+                {
+                    // Segment consumed — recompute next segment this frame
+                    if (horizDist > SegmentDistance)
+                    {
+                        Vector3 segGoal = playerTr.position + horizVec.normalized * SegmentDistance;
+                        _path = _pathScanner.FindPath(playerTr.position, up, segGoal);
+                        _segmented = true;
+                    }
+                    else
+                    {
+                        _path = _pathScanner.FindPath(playerTr.position, up, _target.position);
+                        _segmented = false;
+                    }
+                    _waypointIndex = 0;
+
+                    if (_path == null || _path.Count == 0)
+                    {
+                        _path = new List<PathWaypoint>
+                        {
+                            new PathWaypoint { Position = _target.position, NeedsJump = false }
+                        };
+                        _segmented = false;
+                    }
+
+                    // Re-advance past reached waypoints
+                    while (_waypointIndex < _path.Count)
+                    {
+                        Vector3 toWp2     = _path[_waypointIndex].Position - playerTr.position;
+                        Vector3 toWpFlat2 = toWp2 - Vector3.Project(toWp2, up);
+                        if (toWpFlat2.magnitude > PathConstants.WaypointReachDist) break;
+                        _waypointIndex++;
+                    }
+                    if (_waypointIndex >= _path.Count) return;
+                }
+                else
+                {
+                    return;
+                }
             }
 
             // ── Compute alignment and position 3D audio ─────────────
