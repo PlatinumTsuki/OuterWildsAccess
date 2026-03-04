@@ -427,6 +427,14 @@ namespace OuterWildsAccess
             _strings["autopilot_planet_item"]        = "{0} sur {1} : {2}, {3} mètres.";
             _strings["autopilot_planet_item_no_dist"] = "{0} sur {1} : {2}.";
 
+            // ===== MODEL ROCKET =====
+            _strings["model_rocket_console_enter"]  = "Console fusée modèle réduit. Fin pour autopilote vers le geyser.";
+            _strings["model_rocket_autopilot_on"]    = "Autopilote fusée activé. Vol vers le geyser.";
+            _strings["model_rocket_autopilot_off"]   = "Autopilote fusée désactivé.";
+            _strings["model_rocket_no_target"]       = "Aucun geyser trouvé.";
+            _strings["model_rocket_landed"]          = "Fusée posée sur le geyser !";
+            _strings["model_rocket_distance"]        = "{0} mètres.";
+
             // ===== SHIP RECALL =====
             _strings["recall_success"]     = "Vaisseau rappelé.";
             _strings["recall_inside"]      = "Vous êtes déjà dans le vaisseau.";
@@ -995,6 +1003,14 @@ namespace OuterWildsAccess
             _strings["autopilot_velocity_matched"]   = "Velocity matched.";
             _strings["autopilot_planet_item"]        = "{0} of {1}: {2}, {3} meters.";
             _strings["autopilot_planet_item_no_dist"] = "{0} of {1}: {2}.";
+
+            // ===== MODEL ROCKET =====
+            _strings["model_rocket_console_enter"]  = "Model rocket console. End to autopilot to geyser.";
+            _strings["model_rocket_autopilot_on"]    = "Rocket autopilot engaged. Flying to geyser.";
+            _strings["model_rocket_autopilot_off"]   = "Rocket autopilot disengaged.";
+            _strings["model_rocket_no_target"]       = "No geyser found.";
+            _strings["model_rocket_landed"]          = "Rocket landed on the geyser!";
+            _strings["model_rocket_distance"]        = "{0} metres.";
 
             // ===== SHIP RECALL =====
             _strings["recall_success"]     = "Ship recalled.";

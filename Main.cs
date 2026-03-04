@@ -58,6 +58,7 @@ namespace OuterWildsAccess
         private ShipPilotHandler     _shipPilotHandler;
         private StatusHandler         _statusHandler;
         private ScoutHandler          _scoutHandler;
+        private ModelRocketHandler    _modelRocketHandler;
 
         // Shared pathfinding instance — used by AutoWalk + Guidance
         private PathScanner          _sharedPathScanner;
@@ -158,6 +159,9 @@ namespace OuterWildsAccess
             _nomaiTextHandler = new NomaiTextHandler();
             _nomaiTextHandler.Initialize();
 
+            _modelRocketHandler = new ModelRocketHandler();
+            _modelRocketHandler.Initialize();
+
             _signalscopeHandler = new SignalscopeHandler();
             _signalscopeHandler.Initialize();
 
@@ -204,6 +208,7 @@ namespace OuterWildsAccess
             _shipPilotHandler?.Update();
             _autopilotHandler?.Update();
             _scoutHandler?.Update();
+            _modelRocketHandler?.Update();
         }
 
         private void OnDestroy()
@@ -223,6 +228,7 @@ namespace OuterWildsAccess
             _autopilotHandler?.Cleanup();
             _shipLogReader?.Cleanup();
             _nomaiTextHandler?.Cleanup();
+            _modelRocketHandler?.Cleanup();
             _signalscopeHandler?.Cleanup();
             _shipPilotHandler?.Cleanup();
             _scoutHandler?.Cleanup();
@@ -581,6 +587,17 @@ namespace OuterWildsAccess
                 DebugLogger.LogInput("Delete", "RepeatLast");
                 ScreenReader.RepeatLast();
                 return;
+            }
+
+            // ── Model rocket console: End → autopilot to geyser ──
+            if (_modelRocketHandler != null && _modelRocketHandler.AtConsole)
+            {
+                if (Keyboard.current.endKey.wasPressedThisFrame)
+                {
+                    DebugLogger.LogInput("End", "Model rocket autopilot toggle");
+                    _modelRocketHandler.ToggleAutopilot();
+                }
+                return; // no other nav keys at model rocket console
             }
 
             // ── Flight console: Home/PageUp/PageDown/End → autopilot ──

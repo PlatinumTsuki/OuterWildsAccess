@@ -374,46 +374,27 @@ namespace OuterWildsAccess
                 return;
             }
 
-            // ── InteractReceiver (raycast-based) ──
-            var recvs = new List<InteractReceiver>(
-                Object.FindObjectsOfType<InteractReceiver>());
-            recvs.Sort((a, b) =>
+            // ── All InteractVolumes (base class: catches InteractReceiver,
+            //    InteractZone, AND MultipleInteractionVolume — suits, elevators, etc.) ──
+            var volumes = new List<InteractVolume>(
+                Object.FindObjectsOfType<InteractVolume>());
+            volumes.Sort((a, b) =>
                 Vector3.Distance(playerPos, a.transform.position)
                     .CompareTo(Vector3.Distance(playerPos, b.transform.position)));
 
             int count = 0;
-            foreach (var recv in recvs)
+            foreach (var vol in volumes)
             {
                 if (count >= MaxInteracts) break;
-                if (!recv.gameObject.activeInHierarchy) continue;
-                if (Vector3.Distance(playerPos, recv.transform.position) > InteractRadius) continue;
-                if (recv.GetComponentInParent<CharacterDialogueTree>() != null) continue;
-                if (IsChildOfShip(recv.transform)) continue;
-                string recvName = GetInteractName(recv);
-                if (recvName == null) continue;
-                _categories[2].Add(new NavTarget(recvName, recv.transform, isInteractable: true));
-                count++;
-            }
-
-            // ── InteractZone (trigger volume-based: elevators, consoles, etc.) ──
-            var zones = new List<InteractZone>(
-                Object.FindObjectsOfType<InteractZone>());
-            zones.Sort((a, b) =>
-                Vector3.Distance(playerPos, a.transform.position)
-                    .CompareTo(Vector3.Distance(playerPos, b.transform.position)));
-
-            foreach (var zone in zones)
-            {
-                if (count >= MaxInteracts) break;
-                if (!zone.gameObject.activeInHierarchy) continue;
-                if (Vector3.Distance(playerPos, zone.transform.position) > InteractRadius) continue;
-                if (zone.GetComponentInParent<CharacterDialogueTree>() != null) continue;
-                if (IsChildOfShip(zone.transform)) continue;
-                if (zone.GetComponentInParent<NomaiText>() != null) continue;
-                if (zone.GetComponentInParent<RemoteFlightConsole>() != null) continue;
-                string zoneName = GetInteractName(zone);
-                if (zoneName == null) continue;
-                _categories[2].Add(new NavTarget(zoneName, zone.transform, isInteractable: true));
+                if (!vol.gameObject.activeInHierarchy) continue;
+                if (Vector3.Distance(playerPos, vol.transform.position) > InteractRadius) continue;
+                if (vol.GetComponentInParent<CharacterDialogueTree>() != null) continue;
+                if (IsChildOfShip(vol.transform)) continue;
+                if (vol.GetComponentInParent<NomaiText>() != null) continue;
+                if (vol.GetComponentInParent<RemoteFlightConsole>() != null) continue;
+                string volName = GetInteractName(vol);
+                if (volName == null) continue;
+                _categories[2].Add(new NavTarget(volName, vol.transform, isInteractable: true));
                 count++;
             }
 
@@ -443,7 +424,7 @@ namespace OuterWildsAccess
             Transform shipTr = Locator.GetShipTransform();
             if (shipTr == null) return;
 
-            var volumes = shipTr.GetComponentsInChildren<SingleInteractionVolume>(false);
+            var volumes = shipTr.GetComponentsInChildren<InteractVolume>(false);
             foreach (var vol in volumes)
             {
                 if (!vol.gameObject.activeInHierarchy) continue;
