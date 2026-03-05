@@ -223,6 +223,9 @@ namespace OuterWildsAccess
             }
         }
 
+        /// <summary>True if the currently selected target is in the Locations category.</summary>
+        public bool SelectedTargetIsLocation => _currentCatIdx == 4;
+
         #endregion
 
         #region Target Management

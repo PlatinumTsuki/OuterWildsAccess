@@ -848,6 +848,7 @@ namespace OuterWildsAccess
         private const float TpFootClear    = 1.2f;   // clearance above ground for feet
         private const int   TpCandidates   = 8;      // positions to try around target
 
+
         private void TeleportToSelected()
         {
             if (PlayerState.AtFlightConsole())
@@ -897,30 +898,45 @@ namespace OuterWildsAccess
             }
             baseDir = baseDir.normalized;
 
-            // Try up to 8 positions around the target (every 45°)
-            // First candidate is from the player's side, then rotates around
+            bool isLocation = _navigationHandler.SelectedTargetIsLocation;
+            Vector3 markerPos = targetPos;
+
+            // For locations, find the ground surface first (markers are
+            // often inside terrain).
+            if (isLocation)
+            {
+                Vector3 highStart = targetPos + upDir * 50f;
+                if (Physics.SphereCast(highStart, TpProbeRadius, -upDir, out RaycastHit groundHit,
+                    100f, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                {
+                    targetPos = groundHit.point;
+                }
+            }
+
+            // Probe for safe ground around the target
             Vector3 bestPos = Vector3.zero;
             Vector3 bestOffsetDir = baseDir;
             bool foundSafe = false;
+            bool rejectedDarkMatter = false;
 
-            for (int i = 0; i < TpCandidates; i++)
+            int candidates = TpCandidates;
+            for (int i = 0; i < candidates; i++)
             {
                 float angle = i * (360f / TpCandidates);
                 Vector3 offsetDir = Quaternion.AngleAxis(angle, upDir) * baseDir;
                 Vector3 probeStart = targetPos + offsetDir * TpOffset + upDir * TpProbeUp;
 
-                // SphereCast down to find ground with player-width clearance
                 if (!Physics.SphereCast(probeStart, TpProbeRadius, -upDir, out RaycastHit hit,
                     TpProbeLength - TpProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
-                    continue;  // no ground
+                    continue;
 
-                // Slope check
                 float slopeAngle = Vector3.Angle(upDir, hit.normal);
                 if (slopeAngle > TpMaxSlope) continue;
 
                 Vector3 landingPoint = hit.point + upDir * TpFootClear;
 
-                // Hazard check (ghost matter, fire, electricity, etc.)
+                // Check hazards at landing point
+                bool hasDarkMatter = false;
                 bool hasHazard = false;
                 var cols = Physics.OverlapSphere(hit.point + upDir * 0.5f, 0.5f,
                     OWLayerMask.effectVolumeMask, QueryTriggerInteraction.Collide);
@@ -929,7 +945,14 @@ namespace OuterWildsAccess
                     for (int c = 0; c < cols.Length; c++)
                     {
                         var hv = cols[c].GetComponent<HazardVolume>();
-                        if (hv != null) { hasHazard = true; break; }
+                        if (hv != null)
+                        {
+                            if (hv.GetHazardType() == HazardVolume.HazardType.DARKMATTER)
+                                hasDarkMatter = true;
+                            else
+                                hasHazard = true;
+                            break;
+                        }
 
                         var fv = cols[c].GetComponent<FluidVolume>();
                         if (fv != null && fv.GetFluidType() != FluidVolume.Type.AIR
@@ -940,29 +963,47 @@ namespace OuterWildsAccess
                         }
                     }
                 }
-                if (hasHazard) continue;
+                // Ghost matter: always blocked
+                if (hasDarkMatter) { rejectedDarkMatter = true; continue; }
+                // Other hazards: blocked only without suit
+                if (hasHazard && !PlayerState.IsWearingSuit()) continue;
 
-                // This spot is safe
                 bestPos = landingPoint;
                 bestOffsetDir = offsetDir;
                 foundSafe = true;
-                break;  // take first safe spot (closest to player's side)
+                break;
             }
 
             if (!foundSafe)
             {
-                ScreenReader.Say(Loc.Get("teleport_unsafe"));
-                DebugLogger.Log(LogCategory.State, "Teleport",
-                    $"No safe landing near {targetName} — all {TpCandidates} candidates rejected");
-                return;
+                if (rejectedDarkMatter)
+                {
+                    ScreenReader.Say(Loc.Get("teleport_dark_matter"));
+                    return;
+                }
+
+                // With suit: fallback (suit protects)
+                if (PlayerState.IsWearingSuit())
+                {
+                    // Locations: trust game marker position
+                    // Others: offset +3m up
+                    bestPos = isLocation ? markerPos : targetPos + upDir * 3f;
+                    bestOffsetDir = baseDir;
+                    foundSafe = true;
+                }
+                else
+                {
+                    ScreenReader.Say(Loc.Get("teleport_need_suit"));
+                    return;
+                }
             }
 
             // Face toward the target
             Vector3 faceDir = -bestOffsetDir;
-            Quaternion faceRot = Quaternion.LookRotation(faceDir, upDir);
+            Quaternion targetRot = Quaternion.LookRotation(faceDir, upDir);
 
             WarpHelper.WarpAndMatchVelocity(
-                playerBody, bestPos, faceRot,
+                playerBody, bestPos, targetRot,
                 groundBody, Vector3.zero);
 
             // Kill any residual angular velocity to prevent tumbling on arrival

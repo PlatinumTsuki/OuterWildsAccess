@@ -386,8 +386,9 @@ namespace OuterWildsAccess
                 }
             }
 
-            // ── 3b. Water depth check — stop if submerged or in undertow ────
-            if (_inWater && (PlayerState.IsCameraUnderwater() || PlayerState.InUndertowVolume()))
+            // ── 3b. Water depth check — stop if submerged or in undertow (without suit) ──
+            if (_inWater && !PlayerState.IsWearingSuit()
+                && (PlayerState.IsCameraUnderwater() || PlayerState.InUndertowVolume()))
             {
                 ScreenReader.Say(Loc.Get("auto_walk_hazard", Loc.Get("fluid_deep_water")), SpeechPriority.Now);
                 StopWalk(announce: false);
@@ -631,7 +632,9 @@ namespace OuterWildsAccess
                 PathWaypoint wp = _path[_waypointIndex];
 
                 // ── 10. Ground state + movement tracking ──────────────────────
-                bool grounded = _playerController != null && _playerController.IsGrounded();
+                bool suitUnderwater = PlayerState.IsWearingSuit() && PlayerState.IsCameraUnderwater();
+                bool grounded = (_playerController != null && _playerController.IsGrounded())
+                    || suitUnderwater;
 
                 // 10a. Airborne detection — stop if falling too long (not a planned jump)
                 if (!grounded)
@@ -699,9 +702,9 @@ namespace OuterWildsAccess
                         // Force path rescan on next frame
                         _path = null;
                     }
-                    else if (grounded)
+                    else if (grounded || suitUnderwater)
                     {
-                        // Moving freely on ground — reset stuck counter
+                        // Moving freely on ground or underwater with suit — reset stuck counter
                         _stuckRescanCount = 0;
                     }
                 }
@@ -1063,8 +1066,9 @@ namespace OuterWildsAccess
             switch (fluidType)
             {
                 case FluidVolume.Type.WATER:
-                    // Smart water: check if dangerous (camera submerged or undertow)
-                    if (PlayerState.IsCameraUnderwater() || PlayerState.InUndertowVolume())
+                    // Smart water: dangerous without suit (camera submerged or undertow)
+                    if (!PlayerState.IsWearingSuit()
+                        && (PlayerState.IsCameraUnderwater() || PlayerState.InUndertowVolume()))
                     {
                         ScreenReader.Say(Loc.Get("auto_walk_hazard", Loc.Get("fluid_deep_water")), SpeechPriority.Now);
                         StopWalk(announce: false);
@@ -1115,6 +1119,8 @@ namespace OuterWildsAccess
         private void OnHazardUpdated()
         {
             if (!_isActive || _hazardDetector == null) return;
+            // With suit underwater, ignore water-related damage
+            if (PlayerState.IsWearingSuit() && PlayerState.IsCameraUnderwater()) return;
             if (_hazardDetector.GetNetDamagePerSecond() > 0f)
             {
                 ScreenReader.Say(Loc.Get("auto_walk_hazard", GetHazardName(_hazardDetector)), SpeechPriority.Now);

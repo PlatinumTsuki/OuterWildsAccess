@@ -451,7 +451,10 @@ namespace OuterWildsAccess
             _strings["teleport_too_far"]     = "Cible trop éloignée pour la téléportation.";
             _strings["teleport_not_on_foot"] = "Téléportation disponible uniquement à pied.";
             _strings["teleport_success"]     = "Téléporté vers {0}.";
-            _strings["teleport_unsafe"]     = "Zone d'atterrissage dangereuse — téléportation annulée.";
+            _strings["teleport_unsafe"]       = "Zone d'atterrissage dangereuse — téléportation annulée.";
+            _strings["teleport_unsafe_water"] = "{0} est dans l'eau ou une zone dangereuse — téléportation annulée.";
+            _strings["teleport_dark_matter"]  = "Matière fantôme détectée — téléportation impossible.";
+            _strings["teleport_need_suit"]    = "Zone dangereuse — enfilez votre combinaison avant de vous téléporter.";
 
             // ===== SHIP LOG READER =====
             _strings["logreader_open_summary"]  = "Journal de bord. {0} planètes, {1} entrées au total, {2} explorées, {3} rumeurs.";
@@ -1028,7 +1031,10 @@ namespace OuterWildsAccess
             _strings["teleport_too_far"]     = "Target too far for teleportation.";
             _strings["teleport_not_on_foot"] = "Teleportation only available on foot.";
             _strings["teleport_success"]     = "Teleported to {0}.";
-            _strings["teleport_unsafe"]     = "Unsafe landing zone — teleportation cancelled.";
+            _strings["teleport_unsafe"]       = "Unsafe landing zone — teleportation cancelled.";
+            _strings["teleport_unsafe_water"] = "{0} is in water or a hazardous zone — teleportation cancelled.";
+            _strings["teleport_dark_matter"]  = "Ghost matter detected — teleportation impossible.";
+            _strings["teleport_need_suit"]    = "Hazardous zone — put on your suit before teleporting.";
 
             // ===== SHIP LOG READER =====
             _strings["logreader_open_summary"]  = "Ship log. {0} planets, {1} entries total, {2} explored, {3} rumored.";

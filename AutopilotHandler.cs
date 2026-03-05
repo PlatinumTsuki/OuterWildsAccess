@@ -271,7 +271,7 @@ namespace OuterWildsAccess
             {
                 Vector3 liftPos = shipBody.GetPosition() + shipBody.transform.up * 50f;
                 WarpHelper.WarpAndSetVelocity(
-                    shipBody, liftPos, shipBody.GetRotation(), shipBody.GetVelocity());
+                    shipBody, liftPos, shipBody.GetRotation(), Vector3.zero);
 
                 DebugLogger.Log(LogCategory.State, "AutopilotHandler",
                     "Ship warped 50m above landing site");

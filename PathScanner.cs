@@ -452,6 +452,14 @@ namespace OuterWildsAccess
                     if (dist > 0.01f && !Physics.SphereCast(from, ProbeRadius, dir / dist,
                         out _, castDist, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
                     {
+                        // Ground continuity check: verify there is ground beneath
+                        // the line between the two waypoints. Without this, paths
+                        // along narrow walkways get simplified into a straight line
+                        // over the void (the SphereCast above only detects walls,
+                        // not missing ground).
+                        if (!HasGroundBetween(raw[current].Position, raw[i].Position))
+                            break;
+
                         furthest = i;
                     }
                     else
@@ -465,6 +473,32 @@ namespace OuterWildsAccess
             }
 
             return simple;
+        }
+
+        /// <summary>
+        /// Checks that there is solid ground along the line between two waypoints.
+        /// Samples at intervals of cellSize, casting down from each sample point.
+        /// Returns false if any sample has no ground — the shortcut is unsafe.
+        /// </summary>
+        private bool HasGroundBetween(Vector3 a, Vector3 b)
+        {
+            Vector3 delta = b - a;
+            float   horizDist = (delta - Vector3.Project(delta, _up)).magnitude;
+            int     steps = Mathf.CeilToInt(horizDist / _cellSize);
+            if (steps < 2) return true;  // adjacent cells, no intermediate check needed
+
+            for (int s = 1; s < steps; s++)
+            {
+                float   t     = (float)s / steps;
+                Vector3 point = Vector3.Lerp(a, b, t) + _up * ProbeHeight;
+
+                if (!Physics.SphereCast(point, ProbeRadius, -_up, out _,
+                    ProbeLength, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                {
+                    return false;  // no ground here — can't simplify
+                }
+            }
+            return true;
         }
 
         #endregion
