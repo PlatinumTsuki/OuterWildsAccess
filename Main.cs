@@ -59,6 +59,10 @@ namespace OuterWildsAccess
         private StatusHandler         _statusHandler;
         private ScoutHandler          _scoutHandler;
         private ModelRocketHandler    _modelRocketHandler;
+        private QuantumHandler        _quantumHandler;
+        private DarkBrambleHandler    _darkBrambleHandler;
+        private ElevatorHandler       _elevatorHandler;
+        private GravityHandler        _gravityHandler;
 
         // Shared pathfinding instance — used by AutoWalk + Guidance
         private PathScanner          _sharedPathScanner;
@@ -171,6 +175,18 @@ namespace OuterWildsAccess
             _scoutHandler = new ScoutHandler();
             _scoutHandler.Initialize();
 
+            _quantumHandler = new QuantumHandler();
+            _quantumHandler.Initialize();
+
+            _darkBrambleHandler = new DarkBrambleHandler();
+            _darkBrambleHandler.Initialize();
+
+            _elevatorHandler = new ElevatorHandler();
+            _elevatorHandler.Initialize();
+
+            _gravityHandler = new GravityHandler();
+            _gravityHandler.Initialize();
+
             // Peaceful ghosts (DLC hostile AI disabled)
             PeacefulGhostsHandler.Initialize();
 
@@ -209,6 +225,9 @@ namespace OuterWildsAccess
             _autopilotHandler?.Update();
             _scoutHandler?.Update();
             _modelRocketHandler?.Update();
+            _darkBrambleHandler?.Update();
+            _elevatorHandler?.Update();
+            _gravityHandler?.Update();
         }
 
         private void OnDestroy()
@@ -232,6 +251,10 @@ namespace OuterWildsAccess
             _signalscopeHandler?.Cleanup();
             _shipPilotHandler?.Cleanup();
             _scoutHandler?.Cleanup();
+            _quantumHandler?.Cleanup();
+            _darkBrambleHandler?.Cleanup();
+            _elevatorHandler?.Cleanup();
+            _gravityHandler?.Cleanup();
             LoadManager.OnCompleteSceneLoad -= OnSceneLoaded;
             if (_languageListenerRegistered)
             {
@@ -851,7 +874,11 @@ namespace OuterWildsAccess
 
         private void TeleportToSelected()
         {
-            if (PlayerState.AtFlightConsole())
+            // Block teleport while at the flight console OR anywhere inside
+            // the ship cabin. Teleporting while the game still considers the
+            // player to be in the ship leaves stale state that can persist
+            // after arrival and confuse the screen reader narrative.
+            if (PlayerState.AtFlightConsole() || PlayerState.IsInsideShip())
             {
                 ScreenReader.Say(Loc.Get("teleport_not_on_foot"));
                 return;

@@ -450,6 +450,7 @@ namespace OuterWildsAccess
             _strings["teleport_no_target"]   = "Aucune cible sélectionnée. Scannez d'abord avec Début, puis choisissez avec Page suivante ou précédente.";
             _strings["teleport_too_far"]     = "Cible trop éloignée pour la téléportation.";
             _strings["teleport_not_on_foot"] = "Téléportation disponible uniquement à pied.";
+            _strings["action_inside_ship"]   = "Action impossible à l'intérieur du vaisseau.";
             _strings["teleport_success"]     = "Téléporté vers {0}.";
             _strings["teleport_unsafe"]       = "Zone d'atterrissage dangereuse — téléportation annulée.";
             _strings["teleport_unsafe_water"] = "{0} est dans l'eau ou une zone dangereuse — téléportation annulée.";
@@ -470,6 +471,25 @@ namespace OuterWildsAccess
             // ===== GHOST MATTER HANDLER =====
             _strings["ghost_matter_near"]  = "Attention — matière fantôme à proximité !";
             _strings["ghost_matter_clear"] = "Zone dégagée.";
+
+            // ===== QUANTUM HANDLER =====
+            _strings["quantum_object_moved"] = "Un objet quantique s'est déplacé près de vous.";
+
+            // ===== DARK BRAMBLE HANDLER =====
+            _strings["angler_spotted"]       = "Anglerfish repéré, {0}, à {1} mètres.";
+            _strings["angler_investigating"] = "Un anglerfish enquête.";
+            _strings["angler_chasing"]       = "Un anglerfish vous charge !";
+            _strings["angler_lost"]          = "L'anglerfish vous a perdu.";
+
+            // ===== ELEVATOR HANDLER =====
+            _strings["elevator_going_up"]   = "Ascenseur en montée.";
+            _strings["elevator_going_down"] = "Ascenseur en descente.";
+            _strings["elevator_arrived"]    = "Ascenseur arrivé.";
+
+            // ===== GRAVITY HANDLER =====
+            _strings["gravity_zero"]     = "Gravité nulle. Utilisez le jetpack.";
+            _strings["gravity_restored"] = "Gravité rétablie.";
+            _strings["gravity_flipped"]  = "La gravité a basculé.";
 
             // ===== RESOURCE MONITOR =====
             _strings["gauge_health"]    = "Santé à {0} pourcent.";
@@ -1030,6 +1050,7 @@ namespace OuterWildsAccess
             _strings["teleport_no_target"]   = "No target selected. Scan first with Home, then choose with Page Up or Down.";
             _strings["teleport_too_far"]     = "Target too far for teleportation.";
             _strings["teleport_not_on_foot"] = "Teleportation only available on foot.";
+            _strings["action_inside_ship"]   = "Action not available inside the ship.";
             _strings["teleport_success"]     = "Teleported to {0}.";
             _strings["teleport_unsafe"]       = "Unsafe landing zone — teleportation cancelled.";
             _strings["teleport_unsafe_water"] = "{0} is in water or a hazardous zone — teleportation cancelled.";
@@ -1050,6 +1071,25 @@ namespace OuterWildsAccess
             // ===== GHOST MATTER HANDLER =====
             _strings["ghost_matter_near"]  = "Warning — ghost matter nearby!";
             _strings["ghost_matter_clear"] = "Area clear.";
+
+            // ===== QUANTUM HANDLER =====
+            _strings["quantum_object_moved"] = "A quantum object moved near you.";
+
+            // ===== DARK BRAMBLE HANDLER =====
+            _strings["angler_spotted"]       = "Anglerfish spotted, {0}, {1} meters.";
+            _strings["angler_investigating"] = "An anglerfish is investigating.";
+            _strings["angler_chasing"]       = "An anglerfish is charging at you!";
+            _strings["angler_lost"]          = "The anglerfish lost you.";
+
+            // ===== ELEVATOR HANDLER =====
+            _strings["elevator_going_up"]   = "Elevator going up.";
+            _strings["elevator_going_down"] = "Elevator going down.";
+            _strings["elevator_arrived"]    = "Elevator arrived.";
+
+            // ===== GRAVITY HANDLER =====
+            _strings["gravity_zero"]     = "Zero gravity. Use the jetpack.";
+            _strings["gravity_restored"] = "Gravity restored.";
+            _strings["gravity_flipped"]  = "Gravity has flipped.";
 
             // ===== RESOURCE MONITOR =====
             _strings["gauge_health"]    = "Health at {0} percent.";
