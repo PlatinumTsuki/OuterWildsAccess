@@ -5,7 +5,7 @@ namespace OuterWildsAccess
 {
     /// <summary>
     /// Localization for OuterWildsAccess.
-    /// Supports French and English. Detects game language automatically.
+    /// Supports French, German and English. Detects game language automatically.
     /// Falls back to English for unsupported languages.
     ///
     /// Usage:
@@ -30,21 +30,31 @@ namespace OuterWildsAccess
         /// </summary>
         public static void Initialize()
         {
-            bool isFrench = false;
+            TextTranslation.Language lang = TextTranslation.Language.ENGLISH;
             try
             {
-                var lang = TextTranslation.Get().GetLanguage();
-                isFrench = (lang == TextTranslation.Language.FRENCH);
+                lang = TextTranslation.Get().GetLanguage();
             }
             catch
             {
                 // TextTranslation not ready — default to English
             }
 
-            if (isFrench)
+            if (lang == TextTranslation.Language.FRENCH)
             {
                 InitializeFrench();
                 InitializeKeyLabelsFrench();
+            }
+            else if (lang == TextTranslation.Language.GERMAN)
+            {
+                // German is a full translation; any missing key will fall back
+                // to returning the raw key, so we pre-load English first and
+                // then overwrite with German. This guarantees EN fallback for
+                // any string the translator may have missed.
+                InitializeEnglish();
+                InitializeKeyLabelsEnglish();
+                InitializeGerman();
+                InitializeKeyLabelsGerman();
             }
             else
             {
@@ -1295,6 +1305,576 @@ namespace OuterWildsAccess
             _strings["backend_speech"]         = "Speech backend: {0}";
             _strings["autowalk_patch_failed"]  = "Auto-walk: patch not applied.";
             _strings["nomai_init_error"]       = "Nomai text reading unavailable.";
+        }
+
+        private static void InitializeKeyLabelsGerman()
+        {
+            _keyLabels["CONFIRM"]    = "Bestätigen";
+            _keyLabels["CANCEL"]     = "Abbrechen";
+            _keyLabels["INTERACT"]   = "Interagieren";
+            _keyLabels["JUMP"]       = "Springen";
+            _keyLabels["ENTER"]      = "Eingabe";
+            _keyLabels["BACK"]       = "Zurück";
+            _keyLabels["PAUSE"]      = "Pause";
+            _keyLabels["MAP"]        = "Karte";
+            _keyLabels["SUIT"]       = "Anzug";
+            _keyLabels["FLASHLIGHT"] = "Taschenlampe";
+        }
+
+        private static void InitializeGerman()
+        {
+            // ===== GENERAL =====
+            _strings["mod_loaded"]  = "Outer Wilds Access geladen. Drücke F1 für Hilfe.";
+            _strings["debug_on"]    = "Debug-Modus aktiviert.";
+            _strings["debug_off"]   = "Debug-Modus deaktiviert.";
+            _strings["mod_disabled"] = "Outer Wilds Access deaktiviert.";
+            _strings["mod_enabled"]  = "Outer Wilds Access aktiviert.";
+
+            // ===== HELP MENU (F1) =====
+            _strings["help_open"]        = "Hilfe geöffnet. Pfeiltasten zum Navigieren. Eingabe, um eine Kategorie zu öffnen. Rücktaste, um zurückzugehen. Escape zum Schließen.";
+            _strings["help_close"]       = "Hilfe geschlossen.";
+            _strings["help_category"]    = "{0}, {1} Tastenkürzel.";
+            _strings["help_cat_entered"] = "{0}, {1} Tastenkürzel.";
+            _strings["help_item"]        = "{0}: {1}";
+
+            // Category names
+            _strings["help_cat_general"]    = "Allgemein";
+            _strings["help_cat_navigation"] = "Navigation";
+            _strings["help_cat_status"]     = "Status";
+            _strings["help_cat_ship"]       = "Schiff";
+            _strings["help_cat_tools"]      = "Werkzeuge";
+            _strings["help_cat_settings"]   = "Einstellungen";
+
+            // Key names
+            _strings["help_key_f1"]         = "F1";
+            _strings["help_key_f2"]         = "F2";
+            _strings["help_key_f3"]         = "F3";
+            _strings["help_key_f4"]         = "F4";
+            _strings["help_key_f5"]         = "F5";
+            _strings["help_key_f6"]         = "F6";
+            _strings["help_key_f12"]        = "F12";
+            _strings["help_key_delete"]     = "Entf";
+            _strings["help_key_backspace"]  = "Rücktaste";
+            _strings["help_key_home"]       = "Pos1";
+            _strings["help_key_end"]        = "Ende";
+            _strings["help_key_pageupdown"] = "Bild auf und Bild ab";
+            _strings["help_key_altpage"]    = "Alt + Bild auf und Bild ab";
+            _strings["help_key_g"]          = "G";
+            _strings["help_key_h"]          = "H";
+            _strings["help_key_i"]          = "I";
+            _strings["help_key_j"]          = "J";
+            _strings["help_key_k"]          = "K";
+            _strings["help_key_l"]          = "L";
+            _strings["help_key_m"]          = "B";
+            _strings["help_key_t"]          = "T";
+            _strings["help_key_u"]          = "U";
+
+            // Descriptions
+            _strings["help_desc_f1"]        = "Hilfe — öffnet dieses Menü";
+            _strings["help_desc_f2"]        = "Verbleibende Zeit bis zur Supernova";
+            _strings["help_desc_f3"]        = "Schiff über dir herbeirufen";
+            _strings["help_desc_f4"]        = "Schiffslogbuch — durchsuche deine Entdeckungen";
+            _strings["help_desc_f5"]        = "Mod deaktivieren oder wieder aktivieren";
+            _strings["help_desc_f6"]        = "Einstellungsmenü öffnen";
+            _strings["help_desc_f12"]       = "Debug-Modus umschalten";
+            _strings["help_desc_delete"]    = "Letzte Ansage wiederholen";
+            _strings["help_desc_backspace"] = "Audio-Signalton stummschalten oder wieder einschalten";
+            _strings["help_desc_home_nav"]  = "Objekte in der Nähe scannen";
+            _strings["help_desc_pageupdown_nav"]  = "Durch gescannte Objekte blättern";
+            _strings["help_desc_altpage"]   = "Navigationskategorie wechseln";
+            _strings["help_desc_end_nav"]   = "Entfernung und Richtung zum Ziel";
+            _strings["help_desc_l"]         = "Detaillierte Position — Planet, Zone und Ort in der Nähe";
+            _strings["help_desc_g"]         = "Audio-Wegführung zum Ziel mit Tonsignalen";
+            _strings["help_desc_m"]         = "Automatisches Gehen zum Ziel";
+            _strings["help_desc_t"]         = "Teleportieren zum Ziel — selber Planet, maximal 500 Meter";
+            _strings["help_desc_h"]         = "Persönlicher Status — Gesundheit, Sauerstoff, Jetpack, Boost, Anzug";
+            _strings["help_desc_j"]         = "Schiffsstatus — Treibstoff, Sauerstoff, Hülle, Schäden";
+            _strings["help_desc_k"]         = "Umgebung — aktive Gefahren, Schwerkraft, Wasser";
+            _strings["help_desc_i"]         = "Flugtelemetrie — Geschwindigkeit, Höhe, Schäden";
+            _strings["help_desc_home_pilot"]       = "Autopilot-Ziel auswählen — am Steuerpult";
+            _strings["help_desc_pageupdown_pilot"] = "Planeten durchblättern — am Steuerpult";
+            _strings["help_desc_end_pilot"]        = "Autopilot zum Ziel starten — am Steuerpult";
+            _strings["help_desc_u"]         = "Signalrohr-Status — Frequenz und erkanntes Signal";
+            _strings["help_key_o"]          = "O";
+            _strings["help_desc_o"]         = "Sondenstatus — Entfernung, Verankerung, Störung";
+
+            // ===== MENU HANDLER =====
+            _strings["toggle_on"]       = "Aktiviert";
+            _strings["toggle_off"]      = "Deaktiviert";
+            _strings["slider_value"]    = "{0} von 10";
+            _strings["rebinding_enter"] = "Drücke eine Taste zum Zuweisen.";
+            _strings["rebinding_done"]  = "Taste zugewiesen: {0}.";
+            _strings["rebinding_cancel"]= "Abgebrochen.";
+
+            // ===== STATE HANDLER =====
+            // Death causes
+            _strings["death_default"]          = "Tot.";
+            _strings["death_impact"]           = "Beim Aufprall gestorben.";
+            _strings["death_asphyxiation"]     = "Erstickt — kein Sauerstoff mehr.";
+            _strings["death_energy"]           = "Durch Stromschlag getötet.";
+            _strings["death_supernova"]        = "Von der Supernova verschlungen.";
+            _strings["death_digestion"]        = "Von der Pflanze verdaut.";
+            _strings["death_bigbang"]          = "Ende der Schleife — die Sonne explodiert.";
+            _strings["death_crushed"]          = "Zerquetscht.";
+            _strings["death_meditation"]       = "Meditation — überspringe zum nächsten Zyklus.";
+            _strings["death_timeloop"]         = "Ende der Zeitschleife.";
+            _strings["death_lava"]             = "Durch Lava getötet.";
+            _strings["death_blackhole"]        = "In ein schwarzes Loch gesogen.";
+            _strings["death_dream"]            = "Im Traum gestorben.";
+            _strings["death_dreamexplosion"]   = "Explosion im Traum.";
+            _strings["death_crushedbyelevator"] = "Vom Aufzug zerquetscht.";
+
+            // Respawn / cycle
+            _strings["player_respawn"]         = "Neuer Zyklus. Du bist zurück am Schiff.";
+
+            // Ship
+            _strings["enter_ship"]             = "Im Schiff.";
+            _strings["exit_ship"]              = "Schiff verlassen.";
+            _strings["enter_flight_console"]   = "Am Steuerpult.";
+            _strings["exit_flight_console"]    = "Steuerpult verlassen.";
+            _strings["ship_hull_breach"]       = "Warnung — Schiffshülle durchbrochen!";
+            _strings["enter_ship_computer"]    = "Schiffslogbuch geöffnet.";
+            _strings["exit_ship_computer"]     = "Schiffslogbuch geschlossen.";
+            _strings["enter_landing_view"]     = "Landekamera aktiviert.";
+            _strings["exit_landing_view"]      = "Landekamera deaktiviert.";
+
+            // Equipment
+            _strings["suit_on"]                = "Anzug angelegt.";
+            _strings["suit_off"]               = "Anzug abgelegt.";
+            _strings["flashlight_on"]          = "Taschenlampe an.";
+            _strings["flashlight_off"]         = "Taschenlampe aus.";
+            _strings["equip_signalscope"]      = "Signalrohr ausgerüstet.";
+            _strings["unequip_signalscope"]    = "Signalrohr verstaut.";
+            _strings["equip_translator"]       = "Übersetzer ausgerüstet.";
+            _strings["unequip_translator"]     = "Übersetzer verstaut.";
+
+            // Map
+            _strings["enter_map"]              = "Sonnensystemkarte geöffnet.";
+            _strings["exit_map"]               = "Karte geschlossen.";
+
+            // Time
+            _strings["fast_forward_start"]     = "Zeit wird vorgespult.";
+            _strings["fast_forward_end"]       = "Normale Zeit.";
+
+            // Conversation
+            _strings["enter_conversation"]     = "Dialog.";
+            _strings["exit_conversation"]      = "Dialog beendet.";
+
+            // Signalscope
+            _strings["enter_signalscope"]      = "Signalrohr aktiviert.";
+            _strings["exit_signalscope"]       = "Signalrohr deaktiviert.";
+
+            // ===== NAVIGATION HANDLER =====
+            _strings["nav_ship"]          = "Schiff";
+            _strings["nav_model_rocket"]  = "Modellrakete";
+            _strings["nav_nomai_statue"]  = "Nomai-Statue";
+            _strings["nav_nothing_found"] = "Keine Objekte in der Nähe.";
+            _strings["nav_scan_first"]    = "{0} Objekt(e) gefunden. {1}, {2} Meter.";
+            _strings["nav_item"]          = "{0} von {1}: {2}, {3} Meter.";
+            _strings["nav_stale"]         = "Liste veraltet — drücke Pos1 zum Aktualisieren.";
+            _strings["nav_no_scan"]       = "Scanne zuerst mit der Pos1-Taste.";
+            _strings["nav_no_target"]     = "Wähle ein Objekt mit Bild ab und drücke dann Ende.";
+            _strings["nav_target_lost"]    = "Ziel verloren.";
+            _strings["nav_target_cleared"] = "Ziel gelöscht.";
+            _strings["nav_navigate"]      = "{0}: {1}, {2}m";
+            _strings["nav_interact_hint"] = "Drücke {0} zum Interagieren.";
+            _strings["nav_north"]         = "vorn";
+            _strings["nav_south"]         = "hinten";
+            _strings["nav_east"]          = "rechts";
+            _strings["nav_west"]          = "links";
+            _strings["nav_up"]            = "oben";
+            _strings["nav_down"]          = "unten";
+            _strings["nav_here"]          = "hier";
+            _strings["nav_live"]          = "{0}, {1}m";
+
+            // ===== CATEGORY NAVIGATION (Alt+PageUp/Down) =====
+            _strings["nav_cat_ship"]           = "Schiff";
+            _strings["nav_cat_npcs"]           = "Charaktere";
+            _strings["nav_cat_interactables"]  = "Interagierbares";
+            _strings["nav_cat_nomai"]          = "Nomai-Texte";
+            _strings["nav_cat_locations"]      = "Orte";
+            _strings["nav_cat_signs"]          = "Schilder";
+            _strings["nav_cat_announce"]       = "{0}: {1} Ergebnis(se). {2}, {3} Meter.";
+            _strings["nav_cat_empty"]          = "{0}: keine Ergebnisse.";
+
+            // Nomai text labels (object scan)
+            _strings["nav_nomai_wall"]       = "Nomai-Wandtext";
+            _strings["nav_nomai_computer"]   = "Nomai-Computer";
+
+            // Campfire labels
+            _strings["nav_campfire"]            = "Lagerfeuer";
+            _strings["nav_campfire_lit"]         = "brennend";
+            _strings["nav_campfire_smoldering"]  = "schwelend";
+            _strings["nav_campfire_unlit"]       = "erloschen";
+
+            // Sub-sector translations
+            _strings["sector_village"]             = "Dorf";
+            _strings["sector_zerogcave"]           = "Schwerelosigkeitshöhle";
+            _strings["sector_observatory"]         = "Observatorium";
+            _strings["sector_museum"]              = "Museum";
+            _strings["sector_north_pole"]          = "Nordpol";
+            _strings["sector_south_pole"]          = "Südpol";
+            _strings["sector_crossroads"]          = "Kreuzung";
+            _strings["sector_canyons"]             = "Schluchten";
+            _strings["sector_anglerfish"]          = "Anglerfisch";
+            _strings["sector_oldsettle"]           = "Alte Siedlung";
+            _strings["sector_gravitycannon"]       = "Schwerkraftkanone";
+            _strings["sector_towerofknowledge"]    = "Turm des Wissens";
+            _strings["sector_blackholeforge"]      = "Schwarzlochschmiede";
+            _strings["sector_hangingcity"]         = "Hängende Stadt";
+            _strings["sector_constructionyard"]    = "Bauwerft";
+            _strings["sector_escape_pod"]          = "Rettungskapsel";
+            _strings["sector_thlanding"]           = "Landezone";
+            _strings["sector_geyser"]              = "Geysir";
+            _strings["sector_undergroundlake"]     = "Unterirdischer See";
+            _strings["sector_quantumgrove"]        = "Quantenhain";
+            _strings["sector_quantumcaves"]        = "Quantenhöhlen";
+
+            // ===== LOCATION HANDLER =====
+            _strings["location_enter"]         = "Angekommen: {0}.";
+            _strings["location_current"]       = "Position: {0}.";
+            _strings["location_space"]         = "Im Orbit im Weltraum.";
+            _strings["location_unknown"]       = "Position unbekannt.";
+            _strings["location_near"]          = "in der Nähe von {0}";
+
+            // Planet / zone names (official German names)
+            _strings["loc_sun"]                = "Sonne";
+            _strings["loc_ash_twin"]           = "Aschzwilling";
+            _strings["loc_ember_twin"]         = "Glühzwilling";
+            _strings["loc_hourglass_twins"]    = "Sanduhrzwillinge";
+            _strings["loc_timber_hearth"]      = "Holzheim";
+            _strings["loc_brittle_hollow"]     = "Bruchhöhle";
+            _strings["loc_giants_deep"]        = "Tiefe des Riesen";
+            _strings["loc_dark_bramble"]       = "Dunkles Dornengestrüpp";
+            _strings["loc_comet"]              = "Der Eindringling";
+            _strings["loc_quantum_moon"]       = "Quantenmond";
+            _strings["loc_timber_moon"]        = "Der Attlerock";
+            _strings["loc_volcanic_moon"]      = "Bruchhöhlenlaterne";
+            _strings["loc_bramble_dimension"]  = "Dornengestrüpp-Dimension";
+            _strings["loc_probe_cannon"]       = "Orbitale Sondenkanone";
+            _strings["loc_eye"]                = "Auge des Universums";
+            _strings["loc_sun_station"]        = "Sonnenstation";
+            _strings["loc_white_hole"]         = "Weißes Loch";
+            _strings["loc_time_loop_device"]   = "Zeitschleifen-Vorrichtung";
+            _strings["loc_vessel"]             = "Nomai-Schiff";
+            _strings["loc_vessel_dimension"]   = "Nomai-Schiff-Dimension";
+            _strings["loc_dream_world"]        = "Traumwelt";
+            _strings["loc_invisible_planet"]   = "Der Fremdling";
+
+            // Environment
+            _strings["camera_enter_water"]     = "Kamera unter Wasser.";
+            _strings["attach_to_point"]        = "An einer Oberfläche befestigt.";
+            _strings["detach_from_point"]      = "Von Oberfläche gelöst.";
+            _strings["enter_undertow"]         = "Von Sog erfasst.";
+            _strings["exit_undertow"]          = "Sog verlassen.";
+            _strings["enter_dark_zone"]        = "Dunkle Zone — Licht funktioniert hier nicht.";
+            _strings["exit_dark_zone"]         = "Dunkle Zone verlassen.";
+            _strings["enter_dream_world"]      = "Traumwelt betreten.";
+            _strings["exit_dream_world"]       = "Traumwelt verlassen.";
+            _strings["player_grabbed_ghost"]   = "Von einem Geist gepackt!";
+            _strings["player_released_ghost"]  = "Vom Geist losgelassen.";
+
+            // ===== AUTO-WALK HANDLER =====
+            _strings["auto_walk_hazard"]        = "Gefahr — {0}! Automatisches Gehen gestoppt.";
+            _strings["hazard_fire"]             = "Feuer";
+            _strings["hazard_heat"]             = "Extreme Hitze";
+            _strings["hazard_darkmatter"]       = "Dunkle Materie";
+            _strings["hazard_electricity"]      = "Elektrizität";
+            _strings["hazard_sandfall"]         = "Sandfall";
+            _strings["hazard_generic"]          = "Gefahrenzone";
+            _strings["auto_walk_stuck"]         = "Weg blockiert. Automatisches Gehen gestoppt.";
+            _strings["fluid_water"]             = "Wasser";
+            _strings["fluid_sand"]              = "Fallender Sand";
+            _strings["fluid_plasma"]            = "Sonnenplasma";
+            _strings["fluid_geyser"]            = "Geysir";
+            _strings["fluid_tractor"]           = "Traktorstrahl";
+            _strings["auto_walk_wading"]        = "Seichtes Wasser — gehe weiter.";
+            _strings["fluid_deep_water"]        = "Tiefes Wasser";
+            _strings["auto_walk_out_of_reach"]  = "{0} ist außer Reichweite — zu hoch oder zu niedrig.";
+            _strings["auto_walk_on"]            = "Automatisches Gehen zu {0}.";
+            _strings["auto_walk_off"]           = "Automatisches Gehen gestoppt.";
+            _strings["auto_walk_arrived"]       = "Bei {0} angekommen.";
+            _strings["auto_walk_cliff"]         = "Klippe — Umleitung.";
+            _strings["auto_walk_steering"]      = "Hindernis — Umleitung.";
+            _strings["auto_walk_jump"]          = "Sprung.";
+
+            // ===== PATH GUIDANCE HANDLER =====
+            _strings["guidance_on"]       = "Führung zu {0}.";
+            _strings["guidance_off"]      = "Führung gestoppt.";
+            _strings["guidance_arrived"]  = "Bei {0} angekommen.";
+            _strings["auto_walk_no_path"]       = "Kein Weg gefunden. Automatisches Gehen gestoppt.";
+            _strings["auto_walk_danger_steer"]  = "Gefahr erkannt — Umleitung.";
+
+            // ===== SHIP LOG HANDLER =====
+            _strings["shiplog_updated"]        = "Logbuch aktualisiert.";
+            _strings["shiplog_explored"]       = "Erkundet";
+            _strings["shiplog_rumored"]        = "Gerücht";
+            _strings["shiplog_no_discoveries"] = "Keine Entdeckungen.";
+            _strings["shiplog_back_to_map"]    = "Zurück zur Karte.";
+            _strings["shiplog_detective_reveal"] = "Neue Entdeckungen: {0}. Drücke E zum Fortfahren, dann Q für den Kartenmodus.";
+
+            // ===== AUTOPILOT =====
+            _strings["autopilot_select"]        = "Zielauswahl. Bild auf oder ab zum Wählen. Ende zum Bestätigen.";
+            _strings["autopilot_no_console"]    = "Du musst am Steuerpult sein.";
+            _strings["autopilot_initiated"]     = "Autopilot zu {0}.";
+            _strings["autopilot_arrived"]       = "Bei {0} angekommen.";
+            _strings["autopilot_retro"]         = "Bremsen.";
+            _strings["autopilot_aborted"]       = "Autopilot abgebrochen.";
+            _strings["autopilot_cancelled"]     = "Auswahl abgebrochen.";
+            _strings["autopilot_already_close"] = "Bereits in der Nähe von {0}.";
+            _strings["autopilot_failed"]        = "Autopilot nicht verfügbar.";
+            _strings["autopilot_damaged"]       = "Autopilot beschädigt.";
+            _strings["autopilot_aligning"]           = "Ausrichten zum Ziel.";
+            _strings["autopilot_accelerating"]       = "Beschleunige zum Ziel.";
+            _strings["autopilot_matching_velocity"]  = "Geschwindigkeit angleichen.";
+            _strings["autopilot_velocity_matched"]   = "Geschwindigkeit angeglichen.";
+            _strings["autopilot_planet_item"]        = "{0} von {1}: {2}, {3} Meter.";
+            _strings["autopilot_planet_item_no_dist"] = "{0} von {1}: {2}.";
+
+            // ===== MODEL ROCKET =====
+            _strings["model_rocket_console_enter"]  = "Modellraketen-Konsole. Ende für Autopilot zum Geysir.";
+            _strings["model_rocket_autopilot_on"]    = "Raketen-Autopilot aktiviert. Flug zum Geysir.";
+            _strings["model_rocket_autopilot_off"]   = "Raketen-Autopilot deaktiviert.";
+            _strings["model_rocket_no_target"]       = "Kein Geysir gefunden.";
+            _strings["model_rocket_landed"]          = "Rakete auf dem Geysir gelandet!";
+            _strings["model_rocket_distance"]        = "{0} Meter.";
+
+            // ===== SHIP RECALL =====
+            _strings["recall_success"]     = "Schiff herbeigerufen.";
+            _strings["recall_inside"]      = "Du bist bereits im Schiff.";
+            _strings["recall_destroyed"]   = "Schiff ist zerstört, Herbeirufen nicht möglich.";
+            _strings["recall_unavailable"] = "Schiff-Herbeirufen nicht verfügbar.";
+
+            // ===== LOOP TIMER =====
+            _strings["timer_remaining"]    = "{0} Minuten und {1} Sekunden verbleibend.";
+            _strings["timer_expired"]      = "Zeit abgelaufen.";
+            _strings["timer_unavailable"]  = "Timer nicht verfügbar.";
+
+            // Teleport
+            _strings["teleport_no_target"]   = "Kein Ziel ausgewählt. Scanne zuerst mit Pos1, dann wähle mit Bild auf oder ab.";
+            _strings["teleport_too_far"]     = "Ziel zu weit entfernt für Teleportation.";
+            _strings["teleport_not_on_foot"] = "Teleportation nur zu Fuß verfügbar.";
+            _strings["action_inside_ship"]   = "Aktion im Schiff nicht verfügbar.";
+            _strings["teleport_success"]     = "Teleportiert zu {0}.";
+            _strings["teleport_unsafe"]       = "Unsichere Landezone — Teleportation abgebrochen.";
+            _strings["teleport_unsafe_water"] = "{0} liegt im Wasser oder in einer Gefahrenzone — Teleportation abgebrochen.";
+            _strings["teleport_dark_matter"]  = "Geistermaterie erkannt — Teleportation unmöglich.";
+            _strings["teleport_need_suit"]    = "Gefahrenzone — lege deinen Anzug an, bevor du dich teleportierst.";
+
+            // ===== SHIP LOG READER =====
+            _strings["logreader_open_summary"]  = "Schiffslogbuch. {0} Planeten, {1} Einträge insgesamt, {2} erkundet, {3} Gerüchte.";
+            _strings["logreader_closed"]       = "Logbuch geschlossen.";
+            _strings["logreader_planet"]       = "{0}, {1} Einträge, {2} erkundet, {3} Gerüchte";
+            _strings["logreader_entry"]        = "{0}, {1}, {2} Fakten";
+            _strings["logreader_no_entries"]   = "Keine Entdeckungen im Logbuch.";
+            _strings["logreader_no_facts"]     = "Keine Fakten verfügbar.";
+            _strings["logreader_back_planets"] = "Zurück zu den Planeten.";
+            _strings["logreader_back_entries"] = "Zurück zu den Einträgen für {0}.";
+            _strings["logreader_unavailable"]  = "Schiffslogbuch nicht verfügbar.";
+
+            // ===== GHOST MATTER HANDLER =====
+            _strings["ghost_matter_near"]  = "Warnung — Geistermaterie in der Nähe!";
+            _strings["ghost_matter_clear"] = "Bereich frei.";
+
+            // ===== QUANTUM HANDLER =====
+            _strings["quantum_object_moved"] = "Ein Quantenobjekt hat sich in deiner Nähe bewegt.";
+
+            // ===== DARK BRAMBLE HANDLER =====
+            _strings["angler_spotted"]       = "Anglerfisch gesichtet, {0}, {1} Meter.";
+            _strings["angler_investigating"] = "Ein Anglerfisch untersucht die Umgebung.";
+            _strings["angler_chasing"]       = "Ein Anglerfisch greift dich an!";
+            _strings["angler_lost"]          = "Der Anglerfisch hat dich verloren.";
+
+            // ===== ELEVATOR HANDLER =====
+            _strings["elevator_going_up"]   = "Aufzug fährt nach oben.";
+            _strings["elevator_going_down"] = "Aufzug fährt nach unten.";
+            _strings["elevator_arrived"]    = "Aufzug angekommen.";
+
+            // ===== GRAVITY HANDLER =====
+            _strings["gravity_zero"]     = "Schwerelosigkeit. Benutze das Jetpack.";
+            _strings["gravity_restored"] = "Schwerkraft wiederhergestellt.";
+            _strings["gravity_flipped"]  = "Schwerkraft hat sich umgekehrt.";
+
+            // ===== RESOURCE MONITOR =====
+            _strings["gauge_health"]    = "Gesundheit bei {0} Prozent.";
+            _strings["gauge_oxygen"]    = "Sauerstoff bei {0} Prozent.";
+            _strings["gauge_jetpack"]   = "Jetpack-Treibstoff bei {0} Prozent.";
+            _strings["gauge_ship_fuel"] = "Schiffstreibstoff bei {0} Prozent.";
+
+            // ===== ON-DEMAND STATUS (H / J / K) =====
+            _strings["status_unavailable"]      = "Status nicht verfügbar.";
+            _strings["status_health"]           = "Gesundheit {0} Prozent";
+            _strings["status_oxygen_min"]       = "Sauerstoff {0} Minuten {1} Sekunden";
+            _strings["status_oxygen_sec"]       = "Sauerstoff {0} Sekunden";
+            _strings["status_jetpack"]          = "Jetpack {0} Prozent";
+            _strings["status_boost"]            = "Boost {0} Prozent";
+            _strings["status_suit_punctured"]   = "Anzug durchlöchert";
+            _strings["status_ship_unavailable"] = "Schiff nicht verfügbar.";
+            _strings["status_ship_fuel"]        = "Schiffstreibstoff {0} Prozent";
+            _strings["status_ship_oxygen"]      = "Schiffssauerstoff {0} Prozent";
+            _strings["status_ship_integrity"]   = "Hüllenintegrität {0} Prozent";
+            _strings["status_ship_hull_breach"] = "Hülle durchbrochen";
+            _strings["status_ship_ok"]          = "Keine Schäden";
+            _strings["status_ship_reactor"]     = "Reaktor kritisch";
+            _strings["status_ship_electrical"]  = "Elektrischer Ausfall";
+            _strings["status_hazard"]           = "Gefahr: {0}, {1} Schaden pro Sekunde";
+            _strings["status_no_hazard"]        = "Keine Gefahren";
+            _strings["status_zero_g"]           = "Schwerelosigkeit";
+            _strings["status_underwater"]       = "Unter Wasser";
+            _strings["hazard_ghost_matter"]     = "Geistermaterie";
+            _strings["hazard_sand"]             = "Sand";
+            _strings["hazard_unknown"]          = "Unbekannt";
+
+            // ===== ACCESSIBILITY MENU — items =====
+            _strings["menu_item_gauge"]         = "Ressourcenwarnungen";
+            _strings["menu_item_guidance"]      = "Audio-Tonführung";
+            _strings["menu_item_meditation"]    = "Meditation von Anfang an freigeschaltet";
+            _strings["menu_item_ghostmatterprotection"] = "Schutz vor Geistermaterie";
+            _strings["menu_item_shiprecall"]    = "Schiff herbeirufen";
+            _strings["menu_item_autopilot"]     = "Planeten-Autopilot";
+            _strings["menu_item_peacefulghosts"] = "Friedliche Geister (DLC)";
+            _strings["menu_item_nvdadirect"]    = "NVDA Direct-Speech-API";
+
+            // ===== SHIP PILOT HANDLER =====
+            _strings["pilot_speed_stationary"]  = "Stillstehend";
+            _strings["pilot_speed_slow"]        = "Langsam";
+            _strings["pilot_speed_moderate"]    = "Mäßig";
+            _strings["pilot_speed_fast"]        = "Schnell";
+            _strings["pilot_speed_very_fast"]   = "Sehr schnell";
+            _strings["pilot_speed"]             = "Geschwindigkeit: {0}, {1} m/s.";
+            _strings["pilot_altitude"]          = "Höhe: {0} Meter.";
+            _strings["pilot_approach_warning"]  = "Warnung — Annäherung mit {0} m/s.";
+            _strings["pilot_approach_danger"]   = "Gefahr — schnelle Annäherung mit {0} m/s!";
+            _strings["pilot_liftoff"]           = "Abheben.";
+            _strings["pilot_approach_body"]     = "Annäherung an {0}.";
+            _strings["pilot_lost_target"]       = "Ziel verloren.";
+            _strings["pilot_hull_damaged"]      = "Hülle beschädigt: {0}.";
+            _strings["pilot_component_damaged"] = "Komponente beschädigt: {0}.";
+            _strings["pilot_altimeter_on"]      = "Höhenmesser an.";
+            _strings["pilot_altimeter_off"]     = "Höhenmesser aus.";
+            _strings["pilot_part_top"]          = "Oben";
+            _strings["pilot_part_forward"]      = "Vorn";
+            _strings["pilot_part_port"]         = "Backbord";
+            _strings["pilot_part_landing"]      = "Landegestell";
+            _strings["pilot_part_starboard"]    = "Steuerbord";
+            _strings["pilot_part_aft"]          = "Heck";
+            _strings["pilot_part_autopilot"]    = "Autopilot";
+            _strings["pilot_part_fuel"]         = "Treibstofftank";
+            _strings["pilot_part_gravity"]      = "Schwerkraftgenerator";
+            _strings["pilot_part_lights"]       = "Beleuchtung";
+            _strings["pilot_part_camera"]       = "Landekamera";
+            _strings["pilot_part_left_thrust"]  = "Linkes Triebwerk";
+            _strings["pilot_part_electric"]     = "Elektrisches System";
+            _strings["pilot_part_o2"]           = "Sauerstoffreserve";
+            _strings["pilot_part_reactor"]      = "Reaktor";
+            _strings["pilot_part_right_thrust"] = "Rechtes Triebwerk";
+            _strings["pilot_not_at_console"]       = "Du musst am Steuerpult sein.";
+            _strings["pilot_unavailable"]          = "Flugdaten nicht verfügbar.";
+            _strings["pilot_status_speed"]         = "Geschwindigkeit: {0} m/s, {1}.";
+            _strings["pilot_status_near"]          = "In der Nähe von {0}.";
+            _strings["pilot_status_altitude"]      = "Höhe: {0} Meter.";
+            _strings["pilot_status_hull_breach"]   = "Hüllenbruch!";
+            _strings["pilot_status_damaged"]       = "Hülle bei {0} Prozent.";
+            _strings["pilot_status_no_damage"]     = "Keine Schäden.";
+            _strings["pilot_status_reactor_critical"] = "Reaktor kritisch!";
+            _strings["pilot_status_electrical_fail"]  = "Elektrischer Ausfall!";
+            _strings["pilot_status_landed"]        = "Schiff gelandet.";
+
+            // ===== SIGNALSCOPE HANDLER =====
+            _strings["scope_equipped"]             = "Signalrohr: {0}.";
+            _strings["scope_frequency"]            = "Frequenz: {0}.";
+            _strings["scope_signal_detected"]      = "Signal erkannt: {0}, {1}.";
+            _strings["scope_signal_detected_dist"] = "Signal erkannt: {0}, {1}, {2} Meter.";
+            _strings["scope_signal_lost"]          = "Signal verloren.";
+            _strings["scope_signal_identified"]    = "Signal identifiziert: {0}!";
+            _strings["scope_strength"]             = "Stärke: {0}.";
+            _strings["scope_strength_dist"]        = "Stärke: {0}, {1} Meter.";
+            _strings["scope_unknown_signal"]       = "Unbekanntes Signal";
+            _strings["scope_str_very_weak"]  = "Sehr schwach";
+            _strings["scope_str_weak"]       = "Schwach";
+            _strings["scope_str_moderate"]   = "Mäßig";
+            _strings["scope_str_strong"]     = "Stark";
+            _strings["scope_str_maximum"]    = "Maximal";
+            _strings["scope_not_equipped"]     = "Signalrohr ist nicht ausgerüstet.";
+            _strings["scope_status_no_signal"] = "Frequenz {0}. Kein Signal erkannt.";
+            _strings["scope_status_full"]      = "Frequenz {0}. {1}, {2}, {3} Meter, {4} Grad.";
+            _strings["scope_status_partial"]   = "Frequenz {0}. {1}, {2}, {3} Grad.";
+
+            // ===== SCOUT HANDLER =====
+            _strings["scout_launched"]          = "Sonde abgeschossen.";
+            _strings["scout_anchored"]          = "Sonde verankert.";
+            _strings["scout_retrieved"]         = "Sonde eingeholt.";
+            _strings["scout_destroyed"]         = "Sonde zerstört!";
+            _strings["scout_snapshot"]          = "Foto aufgenommen.";
+            _strings["scout_interference_on"]   = "Sondenstörung erkannt.";
+            _strings["scout_interference_off"]  = "Störung beseitigt.";
+            _strings["scout_available"]         = "Sonde verfügbar.";
+            _strings["scout_unavailable"]       = "Sonde nicht verfügbar.";
+            _strings["scout_distance"]          = "Sonde: {0} Meter";
+            _strings["scout_anchored_time_min"] = "verankert seit {0} Minuten {1} Sekunden";
+            _strings["scout_anchored_time_sec"] = "verankert seit {0} Sekunden";
+            _strings["scout_retrieving"]        = "wird eingeholt";
+            _strings["scout_in_flight"]         = "im Flug";
+            _strings["scout_has_interference"]  = "Störung";
+
+            // ===== NOMAI TEXT HANDLER =====
+            _strings["nomai_root"]  = "Nachricht:";
+            _strings["nomai_reply"] = "Antwort:";
+            _strings["nomai_page"]  = "Seite {0} von {1}.";
+
+            _strings["menu_item_collision"]     = "Kollisions-Piepton";
+            _strings["menu_item_autowalk"]      = "Automatisches Gehen";
+            _strings["menu_item_proximity"]     = "Nähe-Ansagen";
+            _strings["proximity_nearby"]        = "{0}.";
+
+            // ===== BEACON HANDLER =====
+            _strings["beacon_on"]      = "Signalton aktiviert.";
+            _strings["beacon_off"]     = "Signalton deaktiviert.";
+            _strings["beacon_lost"]    = "Signalton-Ziel verloren.";
+            _strings["beacon_muted"]   = "Signalton stummgeschaltet.";
+            _strings["beacon_unmuted"] = "Signalton fortgesetzt.";
+
+            // ===== ACCESSIBILITY MENU =====
+            _strings["menu_open"]   = "Einstellungen geöffnet. Pfeile oder Bildtasten zum Navigieren. Eingabe zum Umschalten. F6 zum Schließen.";
+            _strings["menu_closed"] = "Einstellungen gespeichert.";
+            _strings["menu_cancel"] = "Einstellungen abgebrochen.";
+            _strings["cheats_unlocked"] = "Erweiterte Optionen freigeschaltet.";
+            _strings["menu_item_beacon"]     = "Audio-Signalton";
+            _strings["menu_item_navigation"] = "Navigation";
+            _strings["menu_item_status"]    = "{0}: {1}";
+            _strings["menu_controls_hint"] = "Navigieren: Pfeile. Bestätigen: {0}. Zurück: {1}.";
+
+            // ===== BUTTON LABELS (InputHelper) =====
+            _strings["btn_enter"]       = "Eingabe";
+            _strings["btn_space"]       = "Leertaste";
+            _strings["btn_escape"]      = "Escape";
+            _strings["btn_backspace"]   = "Rücktaste";
+            _strings["btn_delete"]      = "Entf";
+            _strings["btn_up"]          = "Oben";
+            _strings["btn_down"]        = "Unten";
+            _strings["btn_left"]        = "Links";
+            _strings["btn_right"]       = "Rechts";
+            _strings["btn_xbox_view"]   = "View";
+            _strings["btn_ps_cross"]    = "Kreuz";
+            _strings["btn_ps_circle"]   = "Kreis";
+            _strings["btn_ps_square"]   = "Viereck";
+            _strings["btn_ps_share"]    = "Share";
+            _strings["btn_ps_create"]   = "Create";
+            _strings["btn_ps_touchpad"] = "Touchpad";
+            _strings["btn_dpad_up"]     = "Steuerkreuz oben";
+            _strings["btn_dpad_down"]   = "Steuerkreuz unten";
+            _strings["btn_dpad_left"]   = "Steuerkreuz links";
+            _strings["btn_dpad_right"]  = "Steuerkreuz rechts";
+
+            // ===== PROMPT FORMATTING =====
+            _strings["prompt_and"]             = " und ";
+            _strings["prompt_button_single"]   = "Taste";
+            _strings["prompt_button_plural"]   = "Tasten";
+
+            // ===== MISC =====
+            _strings["backend_speech"]         = "Sprachausgabe-Backend: {0}";
+            _strings["autowalk_patch_failed"]  = "Automatisches Gehen: Patch nicht angewendet.";
+            _strings["nomai_init_error"]       = "Nomai-Textanzeige nicht verfügbar.";
         }
 
         #endregion
