@@ -424,6 +424,7 @@ namespace OuterWildsAccess
             _strings["autopilot_no_console"]    = "Vous devez être aux commandes du vaisseau.";
             _strings["autopilot_initiated"]     = "Autopilote vers {0}.";
             _strings["autopilot_arrived"]       = "Arrivé à {0}.";
+            _strings["autopilot_aligned"]       = "Vaisseau aligné avec la surface.";
             _strings["autopilot_retro"]         = "Freinage.";
             _strings["autopilot_aborted"]       = "Autopilote annulé.";
             _strings["autopilot_cancelled"]     = "Sélection annulée.";
@@ -435,6 +436,7 @@ namespace OuterWildsAccess
             _strings["autopilot_matching_velocity"]  = "Alignement de vitesse.";
             _strings["autopilot_velocity_matched"]   = "Vitesse alignée.";
             _strings["autopilot_planet_item"]        = "{0} sur {1} : {2}, {3} mètres.";
+            _strings["autopilot_planet_item_km"]     = "{0} sur {1} : {2}, {3} kilomètres.";
             _strings["autopilot_planet_item_no_dist"] = "{0} sur {1} : {2}.";
 
             // ===== MODEL ROCKET =====
@@ -592,6 +594,7 @@ namespace OuterWildsAccess
             _strings["pilot_unavailable"]          = "Données de vol non disponibles.";
             _strings["pilot_status_speed"]         = "Vitesse : {0} m/s, {1}.";
             _strings["pilot_status_near"]          = "Près de {0}.";
+            _strings["pilot_status_on_body"]       = "Posé sur {0}.";
             _strings["pilot_status_altitude"]      = "Altitude : {0} mètres.";
             _strings["pilot_status_hull_breach"]   = "Brèche dans la coque !";
             _strings["pilot_status_damaged"]       = "Coque à {0} pourcent.";
@@ -1024,6 +1027,7 @@ namespace OuterWildsAccess
             _strings["autopilot_no_console"]    = "You must be at ship controls.";
             _strings["autopilot_initiated"]     = "Autopilot to {0}.";
             _strings["autopilot_arrived"]       = "Arrived at {0}.";
+            _strings["autopilot_aligned"]       = "Ship aligned with surface.";
             _strings["autopilot_retro"]         = "Braking.";
             _strings["autopilot_aborted"]       = "Autopilot aborted.";
             _strings["autopilot_cancelled"]     = "Selection cancelled.";
@@ -1035,6 +1039,7 @@ namespace OuterWildsAccess
             _strings["autopilot_matching_velocity"]  = "Matching velocity.";
             _strings["autopilot_velocity_matched"]   = "Velocity matched.";
             _strings["autopilot_planet_item"]        = "{0} of {1}: {2}, {3} meters.";
+            _strings["autopilot_planet_item_km"]     = "{0} of {1}: {2}, {3} kilometers.";
             _strings["autopilot_planet_item_no_dist"] = "{0} of {1}: {2}.";
 
             // ===== MODEL ROCKET =====
@@ -1192,6 +1197,7 @@ namespace OuterWildsAccess
             _strings["pilot_unavailable"]          = "Flight data unavailable.";
             _strings["pilot_status_speed"]         = "Speed: {0} m/s, {1}.";
             _strings["pilot_status_near"]          = "Near {0}.";
+            _strings["pilot_status_on_body"]       = "Landed on {0}.";
             _strings["pilot_status_altitude"]      = "Altitude: {0} meters.";
             _strings["pilot_status_hull_breach"]   = "Hull breach!";
             _strings["pilot_status_damaged"]       = "Hull at {0} percent.";
@@ -1618,6 +1624,7 @@ namespace OuterWildsAccess
             _strings["autopilot_no_console"]    = "Du musst am Steuerpult sein.";
             _strings["autopilot_initiated"]     = "Autopilot zu {0}.";
             _strings["autopilot_arrived"]       = "Bei {0} angekommen.";
+            _strings["autopilot_aligned"]       = "Schiff mit Oberfläche ausgerichtet.";
             _strings["autopilot_retro"]         = "Bremsen.";
             _strings["autopilot_aborted"]       = "Autopilot abgebrochen.";
             _strings["autopilot_cancelled"]     = "Auswahl abgebrochen.";
@@ -1629,6 +1636,7 @@ namespace OuterWildsAccess
             _strings["autopilot_matching_velocity"]  = "Geschwindigkeit angleichen.";
             _strings["autopilot_velocity_matched"]   = "Geschwindigkeit angeglichen.";
             _strings["autopilot_planet_item"]        = "{0} von {1}: {2}, {3} Meter.";
+            _strings["autopilot_planet_item_km"]     = "{0} von {1}: {2}, {3} Kilometer.";
             _strings["autopilot_planet_item_no_dist"] = "{0} von {1}: {2}.";
 
             // ===== MODEL ROCKET =====
@@ -1772,6 +1780,7 @@ namespace OuterWildsAccess
             _strings["pilot_unavailable"]          = "Flugdaten nicht verfügbar.";
             _strings["pilot_status_speed"]         = "Geschwindigkeit: {0} m/s, {1}.";
             _strings["pilot_status_near"]          = "In der Nähe von {0}.";
+            _strings["pilot_status_on_body"]       = "Gelandet auf {0}.";
             _strings["pilot_status_altitude"]      = "Höhe: {0} Meter.";
             _strings["pilot_status_hull_breach"]   = "Hüllenbruch!";
             _strings["pilot_status_damaged"]       = "Hülle bei {0} Prozent.";

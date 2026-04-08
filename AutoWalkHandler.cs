@@ -86,10 +86,11 @@ namespace OuterWildsAccess
         private PlayerCharacterController _playerController;
         private bool  _wasGrounded      = true;
         private float _airborneTime     = 0f;
-        private const float MaxAirborneBeforeStop = 3f;  // seconds airborne before auto-stop
+        private const float MaxAirborneBeforeStop = 0.5f;  // seconds airborne before auto-stop
 
         // Post-jump rescan
         private float _lastJumpTime = 0f;
+        private bool  _jumpGraceExpiredLogged = false;
 
         // Static fields accessed by Harmony prefix
         private static bool    _injecting    = false;
@@ -640,6 +641,19 @@ namespace OuterWildsAccess
                 if (!grounded)
                 {
                     _airborneTime += Time.deltaTime;
+
+                    // Diagnostic: log when post-jump grace expires while still airborne (overshoot signal)
+                    if (_lastJumpTime > 0f && Time.time - _lastJumpTime > PostJumpRescanDelay
+                        && !_jumpGraceExpiredLogged)
+                    {
+                        DebugLogger.Log(LogCategory.State, "AutoWalkJump",
+                            "GRACE_EXPIRED still airborne after " +
+                            (Time.time - _lastJumpTime).ToString("F2") + "s" +
+                            " airborneTime=" + _airborneTime.ToString("F2") +
+                            " pos=" + playerTr.position.ToString("F2"));
+                        _jumpGraceExpiredLogged = true;
+                    }
+
                     if (_airborneTime >= MaxAirborneBeforeStop && _lastJumpTime == 0f)
                     {
                         ScreenReader.Say(Loc.Get("auto_walk_stuck"), SpeechPriority.Now);
@@ -654,9 +668,12 @@ namespace OuterWildsAccess
                     {
                         _stuckRescanCount = 0;
                         _path = null;  // rescan path after landing
-                        DebugLogger.Log(LogCategory.State, "AutoWalk", "Landed — rescan path");
+                        DebugLogger.Log(LogCategory.State, "AutoWalk",
+                            "Landed after airborne=" + _airborneTime.ToString("F2") + "s" +
+                            " pos=" + playerTr.position.ToString("F2"));
                     }
                     _airborneTime = 0f;
+                    _jumpGraceExpiredLogged = false;
 
                     // 10b. Slope check via raycast — if standing on slope > 45°, rescan
                     if (Physics.Raycast(playerTr.position + up * 0.5f, -up, out RaycastHit slopeHit, 2f,
@@ -716,7 +733,7 @@ namespace OuterWildsAccess
                     Vector3 toJumpHoriz = toJumpWp - Vector3.Project(toJumpWp, up);
                     if (toJumpHoriz.magnitude <= JumpTriggerDist)
                     {
-                        FireJumpWithBoost(playerTr, up, toJumpHoriz);
+                        FireJumpWithBoost(playerTr, up, toJumpHoriz, "astar");
                     }
                 }
 
@@ -725,9 +742,7 @@ namespace OuterWildsAccess
                 {
                     Vector3 toWpDir = wp.Position - playerTr.position;
                     Vector3 toWpH   = toWpDir - Vector3.Project(toWpDir, up);
-                    FireJumpWithBoost(playerTr, up, toWpH);
-                    DebugLogger.Log(LogCategory.State, "AutoWalk",
-                        "Jump triggered by game prompt");
+                    FireJumpWithBoost(playerTr, up, toWpH, "prompt");
                 }
 
                 // ── 13. Walk toward current waypoint ─────────────────────────
@@ -881,19 +896,72 @@ namespace OuterWildsAccess
                 "Jump requested (charge=" + charge.ToString("F2") + ")");
         }
 
-        /// <summary>Fires a jump and adds horizontal boost toward the waypoint.</summary>
-        private void FireJumpWithBoost(Transform playerTr, Vector3 up, Vector3 horizDir)
+        /// <summary>
+        /// Fires a jump and adds horizontal boost toward the waypoint, but only after
+        /// validating that the predicted landing zone has stable ground. If any sample
+        /// point along the trajectory has no ground or steep slope, the jump is cancelled
+        /// and the path is invalidated to force a rescan.
+        /// </summary>
+        private void FireJumpWithBoost(Transform playerTr, Vector3 up, Vector3 horizDir, string source)
         {
+            Vector3 wpPos = (_path != null && _waypointIndex < _path.Count)
+                ? _path[_waypointIndex].Position : Vector3.zero;
+            float   wpDist    = horizDir.magnitude;
+            Vector3 horizDirN = wpDist > 0.01f ? horizDir / wpDist : Vector3.zero;
+
+            // Safety check: predict landing zone and verify ground exists.
+            // The boost (4 m/s) + walk speed pushes the player past the waypoint, so we
+            // sample at the waypoint AND 2m / 4m beyond it in the same direction. All
+            // three points must have stable ground (slope ≤ 60°) within 5m below.
+            if (wpDist > 0.01f && _path != null && _waypointIndex < _path.Count)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    Vector3 samplePoint = wpPos + horizDirN * (i * 2f);
+                    Vector3 castFrom    = samplePoint + up * 2f;
+
+                    if (!Physics.Raycast(castFrom, -up, out RaycastHit groundHit, 6f,
+                        OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                    {
+                        DebugLogger.Log(LogCategory.State, "AutoWalkJump",
+                            "CANCEL_NO_GROUND source=" + source + " sample=" + i +
+                            " samplePos=" + samplePoint.ToString("F2"));
+                        _path = null;          // force rescan
+                        _jumpCooldown = 0.3f;  // brief cooldown to avoid immediate re-trigger
+                        return;
+                    }
+
+                    float slope = Vector3.Angle(up, groundHit.normal);
+                    if (slope > 60f)
+                    {
+                        DebugLogger.Log(LogCategory.State, "AutoWalkJump",
+                            "CANCEL_STEEP source=" + source + " sample=" + i +
+                            " slope=" + slope.ToString("F0"));
+                        _path = null;
+                        _jumpCooldown = 0.3f;
+                        return;
+                    }
+                }
+            }
+
+            // Safe — fire the jump.
             RequestJump();
             _jumpCooldown = 1.5f;
             _lastJumpTime = Time.time;
+
+            DebugLogger.Log(LogCategory.State, "AutoWalkJump",
+                "FIRE source=" + source +
+                " playerPos=" + playerTr.position.ToString("F2") +
+                " wpIdx=" + _waypointIndex +
+                " wpPos=" + wpPos.ToString("F2") +
+                " horizDist=" + wpDist.ToString("F2") +
+                " boostDir=" + (wpDist > 0.01f ? horizDirN.ToString("F2") : "ZERO") +
+                " boostMag=" + JumpHorizBoost);
 
             var owBody = Locator.GetPlayerBody();
             if (owBody != null && horizDir.sqrMagnitude > 0.01f)
             {
                 owBody.AddVelocityChange(horizDir.normalized * JumpHorizBoost);
-                DebugLogger.Log(LogCategory.State, "AutoWalk",
-                    "Jump horizontal boost applied");
             }
         }
 
@@ -905,6 +973,7 @@ namespace OuterWildsAccess
             _injectedLook        = Vector2.zero;
             _jumpCooldown        = 0f;
             _wantJumpFrames      = 0;
+            _jumpGraceExpiredLogged = false;
             _postArrivalAligning = false;
             _pendingArrivalMsg   = null;
             _sweepingPitch       = false;

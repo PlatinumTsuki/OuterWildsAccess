@@ -36,10 +36,10 @@ namespace OuterWildsAccess
         // directions so downward stairs are still detected.
         private const float ProbeHeight    = 4f;    // cast from this far above reference height
         private const float ProbeLength    = 8f;    // max downward ray length
-        private const float ProbeRadius    = 0.35f; // SphereCast radius (slightly < player 0.46m)
+        private const float ProbeRadius    = 0.46f; // SphereCast radius (matches player capsule)
         private const float MaxSlope       = 45f;   // degrees — game limit
         private const float WallCheckH     = 0.9f;  // chest-height wall check
-        private const float JumpClearH     = 1.2f;  // above this = not jumpable
+        private const float JumpClearH     = 0.5f;  // above this = not jumpable (matches realistic step heights, not arbitrary)
         private const float MaxStepHeight  = 3f;    // max vertical gap between adjacent cells
         private const float HeightBand     = 3f;    // height bucket granularity (metres)
         private const float GoalHeightTol  = 4f;    // accept goal within this vertical tolerance
@@ -79,7 +79,7 @@ namespace OuterWildsAccess
 
         // Avoids recomputing when multiple handlers query the same path within a short window
         private const float CacheMaxAge  = 0.4f;  // seconds — valid for less than one guidance rescan
-        private const float CachePosTol  = 1f;    // metres — recompute if player/target moved more
+        private const float CachePosTol  = 0.25f; // metres — recompute if player/target moved more
 
         private float               _cacheTime;
         private Vector3             _cachePlayerPos;
@@ -326,6 +326,19 @@ namespace OuterWildsAccess
             if (Physics.SphereCast(probe, ProbeRadius, -_up, out RaycastHit hit,
                 ProbeLength - ProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
             {
+                // Reject off-axis hits: the SphereCast (radius 0.46m) can catch ground from
+                // a neighbouring platform or a railing top when the cell centre is actually
+                // over the void. A legit hit is at most ProbeRadius away from the column axis
+                // (which passes through horizPos). We allow a small extra tolerance (10cm) to
+                // accept slope contacts where the sphere touches slightly off-centre.
+                Vector3 hitOffset      = hit.point - horizPos;
+                float   hitOffsetHoriz = (hitOffset - _up * Vector3.Dot(hitOffset, _up)).magnitude;
+                if (hitOffsetHoriz > ProbeRadius + 0.1f)
+                {
+                    _cells[key] = c; // not walkable, cache and return
+                    return c;
+                }
+
                 c.Walkable  = Vector3.Angle(_up, hit.normal) <= MaxSlope;
                 c.GroundPos = hit.point;
                 c.Height    = Vector3.Dot(hit.point - _origin, _up);

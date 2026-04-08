@@ -20,13 +20,14 @@ Outer Wilds Access is a comprehensive accessibility mod that makes [Outer Wilds]
 - Cycle through nearby objects with PageUp/PageDown
 - Distance and direction announced on demand (End)
 - **Audio guidance**: tonal cues that change pitch and speed based on your alignment with the target (G)
-- **Auto-walk**: follows the A* pathfinding route to your target, with automatic obstacle avoidance and jump detection (M)
+- **Auto-walk**: follows the A* pathfinding route to your target, with automatic obstacle avoidance and jump detection (B)
 - **Scout probe tracking**: automatic announcements when your probe is launched, anchored, retrieved, or destroyed, plus on-demand status (O)
 
 ### Piloting
-- Ship autopilot to any planet or moon — 13 destinations (Home/PageUp/PageDown/End at the controls)
+- Ship autopilot to any planet or major body — 9 destinations validated against the game's reference frames (Home/PageUp/PageDown/End at the controls)
+- Surface alignment on arrival — the ship auto-orients parallel to the planet's gravity so exiting the cockpit is easier
 - Ship recall — teleport your ship to you anywhere (F3)
-- Flight telemetry: speed, altitude, orientation, nearest body (I)
+- Flight telemetry: speed, altitude, "landed on" / "near" body distinction, damage status (I)
 
 ### Status & Awareness
 - Personal status: health, oxygen, jetpack fuel, boost charge (H)
@@ -58,32 +59,36 @@ Press **F1** in-game for the full interactive help menu. Here are the essentials
 - **F1** — Help menu
 - **F2** — Loop timer
 - **F3** — Recall ship
-- **F5** — Disable/re-enable the mod (for handing the game to a sighted player)
 - **F4** — Ship log reader
+- **F5** — Disable/re-enable the mod (for handing the game to a sighted player)
 - **F6** — Accessibility settings
+- **F12** — Toggle debug mode (writes detailed logs to `OuterWildsAccess.log.txt` in the mod folder)
 - **Delete** — Repeat last announcement
-- **Backspace** — Mute/unmute audio beacon
+- **Backspace** — Mute/unmute audio beacon (out of menus) / Back (in menus)
+- **Escape** — Close menus
 
 ### Navigation (on foot)
 - **Home** — Scan nearby objects
 - **PageUp / PageDown** — Cycle through results
-- **Ctrl+PageUp / Ctrl+PageDown** — Change category
+- **Alt+PageUp / Alt+PageDown** — Change category
 - **End** — Distance and direction to target
 - **G** — Toggle audio guidance
-- **M** — Toggle auto-walk
+- **B** — Toggle auto-walk
+- **T** — Teleport to selected target (same planet, max 500m, fallback when pathfinding fails)
 - **O** — Scout probe status
+- **U** — Signalscope status
 
 ### Navigation (at ship controls)
 - **Home** — Open destination list
-- **PageUp / PageDown** — Cycle planets
+- **PageUp / PageDown** — Cycle destinations
 - **End** — Launch autopilot
 
 ### Status
-- **H** — Personal status
-- **I** — Flight telemetry
-- **J** — Ship status
-- **K** — Environment
-- **L** — Detailed position
+- **H** — Personal status (health, oxygen, jetpack, boost, suit)
+- **I** — Flight telemetry (speed, altitude, landed/near body, damage)
+- **J** — Ship status (fuel, oxygen, hull, components)
+- **K** — Environment (hazards, gravity, water)
+- **L** — Detailed position (planet, sub-sector, nearest landmark)
 
 ## Requirements
 

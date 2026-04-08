@@ -360,6 +360,20 @@ namespace OuterWildsAccess
             try { shipBody = Locator.GetShipBody(); }
             catch { }
 
+            // Detect landed state up front so the body announcement can be phrased
+            // accordingly ("on X" if landed, "near X" if in flight).
+            bool isLanded = false;
+            if (shipBody != null)
+            {
+                try
+                {
+                    var landingMgr = shipBody.GetComponentInChildren<LandingPadManager>();
+                    if (landingMgr != null && landingMgr.IsLanded())
+                        isLanded = true;
+                }
+                catch { }
+            }
+
             var sb = new System.Text.StringBuilder();
 
             // Speed
@@ -373,7 +387,7 @@ namespace OuterWildsAccess
                     sb.Append(" ");
                 }
 
-                // Near body
+                // Body — phrasing depends on landed state
                 try
                 {
                     ReferenceFrame rf = Locator.GetReferenceFrame();
@@ -382,7 +396,8 @@ namespace OuterWildsAccess
                         string bodyName = rf.GetHUDDisplayName();
                         if (!string.IsNullOrEmpty(bodyName))
                         {
-                            sb.Append(Loc.Get("pilot_status_near", bodyName));
+                            string bodyKey = isLanded ? "pilot_status_on_body" : "pilot_status_near";
+                            sb.Append(Loc.Get(bodyKey, bodyName));
                             sb.Append(" ");
                         }
                     }
@@ -445,19 +460,8 @@ namespace OuterWildsAccess
             }
             catch { }
 
-            // Landed
-            if (shipBody != null)
-            {
-                try
-                {
-                    var landingMgr = shipBody.GetComponentInChildren<LandingPadManager>();
-                    if (landingMgr != null && landingMgr.IsLanded())
-                    {
-                        sb.Append(Loc.Get("pilot_status_landed"));
-                    }
-                }
-                catch { }
-            }
+            // Note: landed state is now folded into the body announcement above
+            // ("posé sur X" instead of "près de X" + "vaisseau posé").
 
             string result = sb.ToString().Trim();
             if (string.IsNullOrEmpty(result))
