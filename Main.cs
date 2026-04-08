@@ -897,6 +897,28 @@ namespace OuterWildsAccess
             OWRigidbody playerBody = Locator.GetPlayerBody();
             if (playerBody == null) return;
 
+            // Special case: teleport to ship via the tractor beam.
+            //   - A direct warp into the cabin bypasses the HatchController
+            //     PlayerDetector trigger, so "EnterShip" never fires →
+            //     ShipResources never feeds cabin oxygen → asphyxiation on
+            //     takeoff.
+            //   - Solution: arm the tractor beam manually and warp the
+            //     player into its fluid volume. The beam fluid lifts the
+            //     player up through the airlock trigger naturally — the
+            //     game itself fires "EnterShip" via its own physics
+            //     trigger, leaving all state perfectly consistent.
+            Transform shipTr = Locator.GetShipTransform();
+            if (shipTr != null && target == shipTr)
+            {
+                if (TryTeleportToShipViaBeam(playerBody, targetName))
+                    return;
+                // Fallback: if beam unavailable (ship system failure, etc.),
+                // continue with the regular probe logic. We bias the offset
+                // larger so the player lands clear of the hull instead of
+                // inside it.
+            }
+            bool targetIsShip = (shipTr != null && target == shipTr);
+
             float dist = Vector3.Distance(playerBody.GetPosition(), target.position);
             if (dist > MaxTeleportDistance)
             {
@@ -946,15 +968,22 @@ namespace OuterWildsAccess
             bool foundSafe = false;
             bool rejectedDarkMatter = false;
 
+            // Larger offset and a higher/longer probe for the ship: we need
+            // to land well clear of the hull (~6m wide) AND outside the
+            // tractor beam volume around the airlock (~a few meters).
+            float tpOffset      = targetIsShip ? 12f : TpOffset;
+            float tpProbeUp     = targetIsShip ? 8f  : TpProbeUp;
+            float tpProbeLength = targetIsShip ? 16f : TpProbeLength;
+
             int candidates = TpCandidates;
             for (int i = 0; i < candidates; i++)
             {
                 float angle = i * (360f / TpCandidates);
                 Vector3 offsetDir = Quaternion.AngleAxis(angle, upDir) * baseDir;
-                Vector3 probeStart = targetPos + offsetDir * TpOffset + upDir * TpProbeUp;
+                Vector3 probeStart = targetPos + offsetDir * tpOffset + upDir * tpProbeUp;
 
                 if (!Physics.SphereCast(probeStart, TpProbeRadius, -upDir, out RaycastHit hit,
-                    TpProbeLength - TpProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                    tpProbeLength - TpProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
                     continue;
 
                 float slopeAngle = Vector3.Angle(upDir, hit.normal);
@@ -1042,6 +1071,117 @@ namespace OuterWildsAccess
 
             // Start alignment + sweep toward the target
             _autoWalkHandler?.StartAlignment(target, targetName, isInteractable);
+        }
+
+        /// <summary>
+        /// Teleport the player into the ship's tractor beam fluid volume
+        /// after manually arming it. The beam then lifts the player up
+        /// through the HatchController airlock trigger, which fires the
+        /// game's own "EnterShip" event so all state stays consistent
+        /// (cabin oxygen, audio, beam auto-deactivation, etc.).
+        /// Returns false if the beam component cannot be found or is
+        /// non-functional (ship system failure), so the caller can
+        /// fall back to the regular ground-probe logic.
+        /// </summary>
+        private bool TryTeleportToShipViaBeam(OWRigidbody playerBody, string targetName)
+        {
+            try
+            {
+                Transform shipTr = Locator.GetShipTransform();
+                if (shipTr == null) return false;
+
+                ShipTractorBeamSwitch beamSwitch =
+                    shipTr.GetComponentInChildren<ShipTractorBeamSwitch>(true);
+                if (beamSwitch == null)
+                {
+                    DebugLogger.Log(LogCategory.State, "Teleport",
+                        "Ship tractor beam switch not found");
+                    return false;
+                }
+
+                // Read private _functional flag — if the ship has suffered
+                // a system failure the beam is permanently dead and we
+                // must not warp the player into a non-existent column.
+                var functionalField = typeof(ShipTractorBeamSwitch).GetField(
+                    "_functional",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                if (functionalField != null)
+                {
+                    object val = functionalField.GetValue(beamSwitch);
+                    if (val is bool b && !b)
+                    {
+                        DebugLogger.Log(LogCategory.State, "Teleport",
+                            "Tractor beam not functional (ship system failure)");
+                        return false;
+                    }
+                }
+
+                // Pull the private _beamFluid reference. Its transform sits
+                // inside the aspiration column under the open hatch.
+                var fluidField = typeof(ShipTractorBeamSwitch).GetField(
+                    "_beamFluid",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                if (fluidField == null) return false;
+
+                FluidVolume beamFluid = fluidField.GetValue(beamSwitch) as FluidVolume;
+                if (beamFluid == null || beamFluid.transform == null) return false;
+
+                // Open the hatch programmatically. The hatch GameObject is a
+                // physical obstruction when closed; if we don't open it the
+                // beam can't lift the player through. OpenHatch() is private,
+                // so reflection. The HatchController is on a separate
+                // GameObject from the beam switch.
+                HatchController hatch = shipTr.GetComponentInChildren<HatchController>(true);
+                if (hatch != null)
+                {
+                    var openMethod = typeof(HatchController).GetMethod(
+                        "OpenHatch",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    if (openMethod != null)
+                        openMethod.Invoke(hatch, null);
+                }
+
+                // Arm the beam fluid so it's active when the player arrives.
+                beamSwitch.ActivateTractorBeam();
+
+                // Compute warp position INSIDE the beam capsule:
+                //   - beamFluid.transform.position is the hatch end (pull
+                //     destination) — warping there lands inside the cabin.
+                //   - The capsule extends along +beamFluid.transform.up away
+                //     from the ship (radius 2m, height 20m).
+                //   - We warp to position + up * 8m: well inside the capsule
+                //     (so OnTriggerStay catches the FluidDetector immediately)
+                //     and ~8m below the hatch so the player has time to feel
+                //     the lift.
+                OWRigidbody shipBody = Locator.GetShipBody();
+                Vector3 beamUp = beamFluid.transform.up;
+                Vector3 warpPos = beamFluid.transform.position + beamUp * 8f;
+
+                // Face the player upward toward the ship (opposite of beamUp,
+                // since beamUp points away from the cabin). Use ship forward
+                // as the look direction so the player isn't disoriented on
+                // arrival in the cabin.
+                Vector3 playerUpAfterWarp = -beamUp;
+                Quaternion warpRot = Quaternion.LookRotation(
+                    shipTr.forward, playerUpAfterWarp);
+
+                WarpHelper.WarpAndMatchVelocity(
+                    playerBody, warpPos, warpRot,
+                    shipBody, Vector3.zero);
+
+                playerBody.SetAngularVelocity(Vector3.zero);
+
+                ScreenReader.Say(Loc.Get("teleport_success", targetName));
+                DebugLogger.Log(LogCategory.State, "Teleport",
+                    $"Teleported to {targetName} via tractor beam");
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                DebugLogger.Log(LogCategory.State, "Teleport",
+                    $"Beam teleport failed: {ex.Message}");
+                return false;
+            }
         }
 
         private void AnnounceLoopTimer()
