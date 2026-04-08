@@ -29,8 +29,13 @@ namespace OuterWildsAccess
         private const float DefaultCellSize = 1f;   // metres per grid cell (close range)
         private const float LargeCellSize   = 2f;   // metres per grid cell (long range)
         private const float LargeCellThreshold = 40f; // use large cells above this distance
-        private const float ProbeHeight    = 12f;   // cast from this far above reference height
-        private const float ProbeLength    = 24f;   // max downward ray length
+        // Probe geometry — tight enough to avoid catching ground from far away
+        // (which makes edge cells inconsistent at the sub-metre level), but
+        // tall enough to detect upward steps up to MaxStepHeight (3m) plus
+        // a small margin for safety. Length covers MaxStepHeight in both
+        // directions so downward stairs are still detected.
+        private const float ProbeHeight    = 4f;    // cast from this far above reference height
+        private const float ProbeLength    = 8f;    // max downward ray length
         private const float ProbeRadius    = 0.35f; // SphereCast radius (slightly < player 0.46m)
         private const float MaxSlope       = 45f;   // degrees — game limit
         private const float WallCheckH     = 0.9f;  // chest-height wall check
