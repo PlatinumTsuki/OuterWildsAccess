@@ -270,6 +270,29 @@ namespace OuterWildsAccess
 
             // ===== NAVIGATION HANDLER =====
             _strings["nav_ship"]          = "Vaisseau";
+            _strings["nav_repair_item"]              = "{0} endommagé(e), intégrité {1} %";
+            _strings["repair_focus"]                 = "{0} réparable, intégrité {1} %.";
+            _strings["repair_started"]               = "Réparation en cours.";
+            _strings["repair_progress"]              = "{0} %.";
+            _strings["repair_finished"]              = "Réparation terminée.";
+            _strings["repair_interrupted"]           = "Réparation interrompue à {0} %.";
+            _strings["repair_part_ShipPartTop"]      = "Coque supérieure";
+            _strings["repair_part_ShipPartLanding"]  = "Coque inférieure";
+            _strings["repair_part_ShipPartForward"]  = "Coque avant";
+            _strings["repair_part_ShipPartAft"]      = "Coque arrière";
+            _strings["repair_part_ShipPartPort"]     = "Coque bâbord";
+            _strings["repair_part_ShipPartStarboard"] = "Coque tribord";
+            _strings["repair_part_ShipPartO2"]       = "Réservoir d'oxygène";
+            _strings["repair_part_ShipPartFuel"]     = "Réservoir de carburant";
+            _strings["repair_part_ShipPartElectric"] = "Système électrique";
+            _strings["repair_part_ShipPartReactor"]  = "Réacteur";
+            _strings["repair_part_ShipPartGravity"]  = "Plancher gravitationnel";
+            _strings["repair_part_ShipPartAutopilot"] = "Autopilote";
+            _strings["repair_part_ShipPartLights"]   = "Phares";
+            _strings["repair_part_ShipPartCamera"]   = "Caméra arrière";
+            _strings["repair_part_ShipPartLeftThrust"]  = "Propulseur gauche";
+            _strings["repair_part_ShipPartRightThrust"] = "Propulseur droit";
+            _strings["repair_part_ShipPartUnknown"]  = "Pièce inconnue";
             _strings["nav_model_rocket"]  = "Fusée modèle réduit";
             _strings["nav_nomai_statue"]  = "Statue Nomaï";
             _strings["nav_nothing_found"] = "Aucun objet à proximité.";
@@ -468,6 +491,7 @@ namespace OuterWildsAccess
             _strings["teleport_unsafe_water"] = "{0} est dans l'eau ou une zone dangereuse — téléportation annulée.";
             _strings["teleport_dark_matter"]  = "Matière fantôme détectée — téléportation impossible.";
             _strings["teleport_need_suit"]    = "Zone dangereuse — enfilez votre combinaison avant de vous téléporter.";
+            _strings["teleport_hazard_blocked"] = "Zone dangereuse — aucun point d'arrivée sûr trouvé.";
 
             // ===== SHIP LOG READER =====
             _strings["logreader_open_summary"]  = "Journal de bord. {0} planètes, {1} entrées au total, {2} explorées, {3} rumeurs.";
@@ -873,6 +897,29 @@ namespace OuterWildsAccess
 
             // ===== NAVIGATION HANDLER =====
             _strings["nav_ship"]          = "Ship";
+            _strings["nav_repair_item"]              = "{0} damaged, integrity {1}%";
+            _strings["repair_focus"]                 = "{0} repairable, integrity {1}%.";
+            _strings["repair_started"]               = "Repairing.";
+            _strings["repair_progress"]              = "{0}%.";
+            _strings["repair_finished"]              = "Repair complete.";
+            _strings["repair_interrupted"]           = "Repair interrupted at {0}%.";
+            _strings["repair_part_ShipPartTop"]      = "Top hull";
+            _strings["repair_part_ShipPartLanding"]  = "Bottom hull";
+            _strings["repair_part_ShipPartForward"]  = "Front hull";
+            _strings["repair_part_ShipPartAft"]      = "Rear hull";
+            _strings["repair_part_ShipPartPort"]     = "Port hull";
+            _strings["repair_part_ShipPartStarboard"] = "Starboard hull";
+            _strings["repair_part_ShipPartO2"]       = "Oxygen tank";
+            _strings["repair_part_ShipPartFuel"]     = "Fuel tank";
+            _strings["repair_part_ShipPartElectric"] = "Electrical system";
+            _strings["repair_part_ShipPartReactor"]  = "Reactor";
+            _strings["repair_part_ShipPartGravity"]  = "Gravity floor";
+            _strings["repair_part_ShipPartAutopilot"] = "Autopilot";
+            _strings["repair_part_ShipPartLights"]   = "Headlights";
+            _strings["repair_part_ShipPartCamera"]   = "Rear camera";
+            _strings["repair_part_ShipPartLeftThrust"]  = "Left thruster";
+            _strings["repair_part_ShipPartRightThrust"] = "Right thruster";
+            _strings["repair_part_ShipPartUnknown"]  = "Unknown part";
             _strings["nav_model_rocket"]  = "Model rocket";
             _strings["nav_nomai_statue"]  = "Nomai statue";
             _strings["nav_nothing_found"] = "No objects nearby.";
@@ -1071,6 +1118,7 @@ namespace OuterWildsAccess
             _strings["teleport_unsafe_water"] = "{0} is in water or a hazardous zone — teleportation cancelled.";
             _strings["teleport_dark_matter"]  = "Ghost matter detected — teleportation impossible.";
             _strings["teleport_need_suit"]    = "Hazardous zone — put on your suit before teleporting.";
+            _strings["teleport_hazard_blocked"] = "Hazardous zone — no safe landing point found.";
 
             // ===== SHIP LOG READER =====
             _strings["logreader_open_summary"]  = "Ship log. {0} planets, {1} entries total, {2} explored, {3} rumored.";
@@ -1472,6 +1520,29 @@ namespace OuterWildsAccess
 
             // ===== NAVIGATION HANDLER =====
             _strings["nav_ship"]          = "Schiff";
+            _strings["nav_repair_item"]              = "{0} beschädigt, Integrität {1} %";
+            _strings["repair_focus"]                 = "{0} reparierbar, Integrität {1} %.";
+            _strings["repair_started"]               = "Reparatur läuft.";
+            _strings["repair_progress"]              = "{0} %.";
+            _strings["repair_finished"]              = "Reparatur abgeschlossen.";
+            _strings["repair_interrupted"]           = "Reparatur bei {0} % unterbrochen.";
+            _strings["repair_part_ShipPartTop"]      = "Obere Hülle";
+            _strings["repair_part_ShipPartLanding"]  = "Untere Hülle";
+            _strings["repair_part_ShipPartForward"]  = "Bughülle";
+            _strings["repair_part_ShipPartAft"]      = "Heckhülle";
+            _strings["repair_part_ShipPartPort"]     = "Backbordhülle";
+            _strings["repair_part_ShipPartStarboard"] = "Steuerbordhülle";
+            _strings["repair_part_ShipPartO2"]       = "Sauerstofftank";
+            _strings["repair_part_ShipPartFuel"]     = "Treibstofftank";
+            _strings["repair_part_ShipPartElectric"] = "Elektrik";
+            _strings["repair_part_ShipPartReactor"]  = "Reaktor";
+            _strings["repair_part_ShipPartGravity"]  = "Gravitationsboden";
+            _strings["repair_part_ShipPartAutopilot"] = "Autopilot";
+            _strings["repair_part_ShipPartLights"]   = "Scheinwerfer";
+            _strings["repair_part_ShipPartCamera"]   = "Heckkamera";
+            _strings["repair_part_ShipPartLeftThrust"]  = "Linkes Triebwerk";
+            _strings["repair_part_ShipPartRightThrust"] = "Rechtes Triebwerk";
+            _strings["repair_part_ShipPartUnknown"]  = "Unbekanntes Teil";
             _strings["nav_model_rocket"]  = "Modellrakete";
             _strings["nav_nomai_statue"]  = "Nomai-Statue";
             _strings["nav_nothing_found"] = "Keine Objekte in der Nähe.";
@@ -1668,6 +1739,7 @@ namespace OuterWildsAccess
             _strings["teleport_unsafe_water"] = "{0} liegt im Wasser oder in einer Gefahrenzone — Teleportation abgebrochen.";
             _strings["teleport_dark_matter"]  = "Geistermaterie erkannt — Teleportation unmöglich.";
             _strings["teleport_need_suit"]    = "Gefahrenzone — lege deinen Anzug an, bevor du dich teleportierst.";
+            _strings["teleport_hazard_blocked"] = "Gefahrenzone — kein sicherer Landepunkt gefunden.";
 
             // ===== SHIP LOG READER =====
             _strings["logreader_open_summary"]  = "Schiffslogbuch. {0} Planeten, {1} Einträge insgesamt, {2} erkundet, {3} Gerüchte.";

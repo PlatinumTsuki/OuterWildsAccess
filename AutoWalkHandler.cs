@@ -68,7 +68,8 @@ namespace OuterWildsAccess
         private string _pendingArrivalMsg   = null;
         private bool   _sweepingPitch       = false;
         private float  _sweepPitch          = 0f;
-        private const float SweepStart      = 30f;   // start looking slightly up
+        private bool   _directAimPending    = false;  // wait 1 frame for direct aim check
+        private const float SweepStart      = 30f;    // start looking slightly up
         private const float SweepEnd        = -60f;   // sweep down to -60°
         private const float SweepSpeed      = 60f;    // degrees per second
 
@@ -115,6 +116,16 @@ namespace OuterWildsAccess
         // Jump prompt detection — Reflection
         private static System.Reflection.FieldInfo _fieldListPrompts = null;
         private static bool _promptReflectionReady = false;
+
+        // Focus detection — Reflection on FirstPersonManipulator private fields
+        // HasFocusedInteractible() only checks _interactReceiver and _interactZone,
+        // but the game also tracks _focusedRepairReceiver, _focusedNomaiText,
+        // _focusedItemSocket, and _focusedItem separately.
+        private static System.Reflection.FieldInfo _fieldFocusedRepair   = null;
+        private static System.Reflection.FieldInfo _fieldFocusedNomaiText = null;
+        private static System.Reflection.FieldInfo _fieldFocusedItemSocket = null;
+        private static System.Reflection.FieldInfo _fieldFocusedItem     = null;
+        private static bool _focusReflectionReady = false;
 
         /// <summary>True while auto-walk is running.</summary>
         public bool IsActive => _isActive;
@@ -240,20 +251,24 @@ namespace OuterWildsAccess
             _path                = null;
             _waypointIndex       = 0;
 
-            // Reset camera pitch
-            var camCtrl = Locator.GetPlayerCameraController();
-            if (camCtrl != null) camCtrl.SetDegreesY(0f);
-
-            // Initial pitch toward target collider
+            // Instant body rotation (yaw) toward the target so the
+            // first frame of the sweep already has correct horizontal aim.
             Transform playerTr = Locator.GetPlayerTransform();
+            if (playerTr != null && target != null)
+            {
+                AlignBodyYawToTarget(playerTr, target);
+            }
+
+            // Initial pitch toward target collider (direct aim attempt)
+            var camCtrl = Locator.GetPlayerCameraController();
             if (playerTr != null) AlignCameraPitchToTarget(playerTr, target);
 
-            // Start sweep for interactable targets
+            // For interactable targets: wait 1 frame for the game's raycast
+            // to process our direct aim before falling back to sweep.
             if (isInteractable)
             {
-                _sweepingPitch = true;
-                _sweepPitch    = SweepStart;
-                if (camCtrl != null) camCtrl.SetDegreesY(_sweepPitch);
+                _directAimPending = true;
+                _sweepingPitch    = false;
             }
 
             DebugLogger.LogState("[AutoWalkHandler] Alignment started for: " + _targetName);
@@ -415,22 +430,20 @@ namespace OuterWildsAccess
             {
                 _onArrival?.Invoke();
 
-                // Initial pitch: aim at collider center
+                // Instant body yaw + camera pitch toward collider
+                AlignBodyYawToTarget(playerTr, _target);
                 AlignCameraPitchToTarget(playerTr, _target);
-
 
                 _injectedAxis        = Vector2.zero;
                 _postArrivalAligning = true;
                 _alignEndTime        = Time.time + AlignTimeout;
                 _pendingArrivalMsg   = Loc.Get("auto_walk_arrived", _targetName);
 
-                // Start pitch sweep for interactable targets
+                // Wait 1 frame for direct aim check before sweeping
                 if (_targetIsInteractable)
                 {
-                    _sweepingPitch = true;
-                    _sweepPitch    = SweepStart;
-                    var camSweep = Locator.GetPlayerCameraController();
-                    if (camSweep != null) camSweep.SetDegreesY(_sweepPitch);
+                    _directAimPending = true;
+                    _sweepingPitch    = false;
                 }
             }
 
@@ -446,18 +459,45 @@ namespace OuterWildsAccess
                     return;
                 }
 
+                // Direct aim check: after 1 frame, test if our calculated aim
+                // already hit the target before resorting to the sweep.
+                if (_directAimPending)
+                {
+                    _directAimPending = false;
+                    var fpmDirect = Locator.GetPlayerCamera()?.GetComponent<FirstPersonManipulator>();
+                    if (fpmDirect != null && HasAnyFocus(fpmDirect))
+                    {
+                        DebugLogger.Log(LogCategory.State, "AutoWalk",
+                            "Direct aim hit — no sweep needed");
+                        ScreenReader.Say(_pendingArrivalMsg ?? "");
+                        _pendingArrivalMsg = null;
+                        StopWalk(announce: false);
+                        return;
+                    }
+
+                    // Direct aim missed — start sweep fallback
+                    _sweepingPitch = true;
+                    _sweepPitch    = SweepStart;
+                    var camFallback = Locator.GetPlayerCameraController();
+                    if (camFallback != null) camFallback.SetDegreesY(_sweepPitch);
+                    DebugLogger.Log(LogCategory.State, "AutoWalk",
+                        "Direct aim missed — starting sweep");
+                }
+
                 // Pitch sweep: scan from +30° to -60° looking for interactable focus
                 if (_sweepingPitch)
                 {
                     var camCtrl = Locator.GetPlayerCameraController();
                     if (camCtrl != null)
                     {
-                        // Check if the game detected an interactable via raycast
+                        // Check if the game detected ANY focus (interact, repair, nomai, item)
                         var fpm = Locator.GetPlayerCamera()?.GetComponent<FirstPersonManipulator>();
-                        if (fpm != null && fpm.HasFocusedInteractible())
+                        if (fpm != null && HasAnyFocus(fpm))
                         {
                             // Found it! Stop sweep and announce
                             _sweepingPitch = false;
+                            DebugLogger.Log(LogCategory.State, "AutoWalk",
+                                $"Sweep found focus at pitch {_sweepPitch:F1}°");
                             ScreenReader.Say(_pendingArrivalMsg ?? "");
                             _pendingArrivalMsg = null;
                             StopWalk(announce: false);
@@ -976,6 +1016,7 @@ namespace OuterWildsAccess
             _jumpGraceExpiredLogged = false;
             _postArrivalAligning = false;
             _pendingArrivalMsg   = null;
+            _directAimPending    = false;
             _sweepingPitch       = false;
             _path                = null;
             _waypointIndex       = 0;
@@ -1052,9 +1093,99 @@ namespace OuterWildsAccess
         }
 
         /// <summary>
+        /// Checks whether FirstPersonManipulator has ANY focused target,
+        /// including RepairReceiver, NomaiText, OWItemSocket, OWItem —
+        /// not just the InteractReceiver/InteractZone covered by
+        /// HasFocusedInteractible().
+        /// </summary>
+        private static bool HasAnyFocus(FirstPersonManipulator fpm)
+        {
+            if (fpm == null) return false;
+
+            // Public check covers _interactReceiver and _interactZone
+            if (fpm.HasFocusedInteractible()) return true;
+
+            // Lazy init reflection fields
+            if (!_focusReflectionReady)
+            {
+                var rf = System.Reflection.BindingFlags.NonPublic
+                       | System.Reflection.BindingFlags.Instance;
+                _fieldFocusedRepair     = typeof(FirstPersonManipulator).GetField("_focusedRepairReceiver", rf);
+                _fieldFocusedNomaiText  = typeof(FirstPersonManipulator).GetField("_focusedNomaiText", rf);
+                _fieldFocusedItemSocket = typeof(FirstPersonManipulator).GetField("_focusedItemSocket", rf);
+                _fieldFocusedItem       = typeof(FirstPersonManipulator).GetField("_focusedItem", rf);
+                _focusReflectionReady = true;
+                DebugLogger.LogState("[AutoWalkHandler] Focus reflection init — repair:"
+                    + (_fieldFocusedRepair != null) + " nomai:" + (_fieldFocusedNomaiText != null)
+                    + " socket:" + (_fieldFocusedItemSocket != null) + " item:" + (_fieldFocusedItem != null));
+            }
+
+            if (_fieldFocusedRepair != null && _fieldFocusedRepair.GetValue(fpm) != null) return true;
+            if (_fieldFocusedNomaiText != null && _fieldFocusedNomaiText.GetValue(fpm) != null) return true;
+            if (_fieldFocusedItemSocket != null && _fieldFocusedItemSocket.GetValue(fpm) != null) return true;
+            if (_fieldFocusedItem != null && _fieldFocusedItem.GetValue(fpm) != null) return true;
+
+            return false;
+        }
+
+        /// <summary>
         /// Computes the best aim point for the target: collider center if available,
         /// otherwise 1m above root. Returns the pitch angle to aim the camera there.
         /// </summary>
+        /// <summary>
+        /// Instantly rotates the player body so it faces the target horizontally.
+        /// Only modifies yaw (rotation around up), never pitch.
+        /// </summary>
+        private static void AlignBodyYawToTarget(Transform playerTr, Transform target)
+        {
+            Vector3 up = playerTr.up;
+            Vector3 aimPoint = GetBestAimPoint(playerTr, target);
+            Vector3 toTarget = aimPoint - playerTr.position;
+            // Remove vertical component to get horizontal direction only
+            Vector3 horizDir = toTarget - Vector3.Project(toTarget, up);
+            if (horizDir.sqrMagnitude < 0.01f) return;
+
+            Quaternion targetRot = Quaternion.LookRotation(horizDir.normalized, up);
+            playerTr.rotation = targetRot;
+
+            DebugLogger.Log(LogCategory.State, "AutoWalk",
+                "Body yaw aligned toward " + target.name);
+        }
+
+        /// <summary>
+        /// Returns the best world-space point to aim at for a target.
+        /// Prefers the closest point on the nearest collider, then
+        /// collider bounds center, then 1m above root.
+        /// </summary>
+        private static Vector3 GetBestAimPoint(Transform playerTr, Transform target)
+        {
+            Vector3 up = playerTr.up;
+            var playerCam = Locator.GetPlayerCamera();
+            Vector3 origin = playerCam != null
+                ? playerCam.transform.position
+                : playerTr.position;
+
+            // Try to find the closest collider on the target or its children
+            var col = target.GetComponent<Collider>();
+            if (col == null)
+                col = target.GetComponentInChildren<Collider>();
+
+            if (col != null)
+            {
+                // ClosestPoint gives the nearest surface point to the camera —
+                // this is where the raycast needs to hit.
+                Vector3 closest = col.ClosestPoint(origin);
+                // Sanity: ClosestPoint returns the input point if inside
+                // the collider. Fall back to bounds.center in that case.
+                if (Vector3.Distance(closest, origin) < 0.1f)
+                    return col.bounds.center;
+                return closest;
+            }
+
+            // Fallback: aim ~1m above target root
+            return target.position + up * 1.0f;
+        }
+
         private static float ComputePitchToTarget(Transform playerTr, Transform target)
         {
             var camCtrl = Locator.GetPlayerCameraController();
@@ -1066,19 +1197,7 @@ namespace OuterWildsAccess
                 : playerTr.position;
 
             Vector3 up = playerTr.up;
-
-            // Find the actual collider center for precise aiming
-            Vector3 aimPoint;
-            var col = target.GetComponent<Collider>();
-            if (col != null)
-            {
-                aimPoint = col.bounds.center;
-            }
-            else
-            {
-                // Fallback: aim ~1m above target root
-                aimPoint = target.position + up * 1.0f;
-            }
+            Vector3 aimPoint = GetBestAimPoint(playerTr, target);
 
             Vector3 toAim = aimPoint - origin;
             Vector3 horizDir = toAim - Vector3.Project(toAim, up);

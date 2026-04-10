@@ -284,7 +284,10 @@ namespace OuterWildsAccess
             // ── Category 0: Ship ───────────────────────────────────────────
             Transform shipTr = Locator.GetShipTransform();
             if (shipTr != null)
+            {
                 _categories[0].Add(new NavTarget(Loc.Get("nav_ship"), shipTr));
+                ScanRepairReceivers(shipTr, playerPos);
+            }
 
             // ── Category 1: NPCs + Category 5: Signs ─────────────────────
             ScanNpcs(playerPos);
@@ -436,6 +439,80 @@ namespace OuterWildsAccess
                 if (string.IsNullOrEmpty(name)) continue;
                 _categories[2].Add(new NavTarget(name, vol.transform, isInteractable: true));
             }
+        }
+
+        /// <summary>
+        /// Scans all RepairReceivers under the ship and adds those currently
+        /// repairable (filtered by IsRepairable, which already accounts for
+        /// inside/outside ship context) to the Ship category. Each entry shows
+        /// the localized part name and current integrity percentage.
+        ///
+        /// Deduplication: ShipHull.Start() spawns one RepairReceiver per
+        /// collider in the hull's collider group, all pointing to the same
+        /// ShipHull. We collapse those to a single entry per target object
+        /// (hull / component / satellite node), keeping the receiver closest
+        /// to the player so auto-walk routes to the nearest valid interaction
+        /// point.
+        /// </summary>
+        private void ScanRepairReceivers(Transform shipTr, Vector3 playerPos)
+        {
+            var receivers = shipTr.GetComponentsInChildren<RepairReceiver>(false);
+
+            // Per-target best receiver (smallest distance to player wins).
+            var bestPerTarget = new Dictionary<Object, RepairReceiver>();
+            var bestDistance  = new Dictionary<Object, float>();
+
+            foreach (var rcv in receivers)
+            {
+                if (rcv == null || !rcv.gameObject.activeInHierarchy) continue;
+
+                bool repairable;
+                try { repairable = rcv.IsRepairable(); }
+                catch { continue; }
+                if (!repairable) continue;
+
+                Object key = GetRepairTargetKey(rcv);
+                if (key == null) continue;
+
+                float dist = Vector3.Distance(playerPos, rcv.transform.position);
+                if (!bestDistance.TryGetValue(key, out float prev) || dist < prev)
+                {
+                    bestDistance[key]  = dist;
+                    bestPerTarget[key] = rcv;
+                }
+            }
+
+            foreach (var rcv in bestPerTarget.Values)
+            {
+                string partName = LocalizeRepairPart(rcv.GetRepairableName());
+                int    pct      = Mathf.Clamp(Mathf.RoundToInt(rcv.GetRepairFraction() * 100f), 0, 100);
+                string label    = Loc.Get("nav_repair_item", partName, pct);
+
+                _categories[(int)NavCategory.Ship].Add(
+                    new NavTarget(label, rcv.transform, isInteractable: true));
+            }
+        }
+
+        /// <summary>
+        /// Returns the underlying repair target (ShipHull / ShipComponent /
+        /// SatelliteNode) used as a deduplication key. Multiple RepairReceivers
+        /// on different colliders share the same target object.
+        /// </summary>
+        private static Object GetRepairTargetKey(RepairReceiver rcv)
+        {
+            switch (rcv.type)
+            {
+                case RepairReceiver.Type.ShipHull:      return rcv.targetHull;
+                case RepairReceiver.Type.ShipComponent: return rcv.targetComponent;
+                case RepairReceiver.Type.SatelliteNode: return rcv.targetSatNode;
+                default:                                return null;
+            }
+        }
+
+        /// <summary>Maps a UITextType ship-part name to a localized string.</summary>
+        private static string LocalizeRepairPart(UITextType type)
+        {
+            return Loc.Get("repair_part_" + type.ToString());
         }
 
         private void ScanNomaiTexts(Vector3 playerPos)

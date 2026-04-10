@@ -63,9 +63,15 @@ namespace OuterWildsAccess
         private DarkBrambleHandler    _darkBrambleHandler;
         private ElevatorHandler       _elevatorHandler;
         private GravityHandler        _gravityHandler;
+        private RepairHandler         _repairHandler;
 
         // Shared pathfinding instance — used by AutoWalk + Guidance
         private PathScanner          _sharedPathScanner;
+
+        // Cached hazard references for teleport safety checks.
+        // Refreshed per TP call — avoids depending on disabled colliders.
+        private Campfire[]      _cachedCampfires;
+        private HazardVolume[]  _cachedHazardVolumes;
 
         #endregion
 
@@ -187,6 +193,9 @@ namespace OuterWildsAccess
             _gravityHandler = new GravityHandler();
             _gravityHandler.Initialize();
 
+            _repairHandler = new RepairHandler();
+            _repairHandler.Initialize();
+
             // Peaceful ghosts (DLC hostile AI disabled)
             PeacefulGhostsHandler.Initialize();
 
@@ -228,6 +237,7 @@ namespace OuterWildsAccess
             _darkBrambleHandler?.Update();
             _elevatorHandler?.Update();
             _gravityHandler?.Update();
+            _repairHandler?.Update();
         }
 
         private void OnDestroy()
@@ -255,6 +265,7 @@ namespace OuterWildsAccess
             _darkBrambleHandler?.Cleanup();
             _elevatorHandler?.Cleanup();
             _gravityHandler?.Cleanup();
+            _repairHandler?.Cleanup();
             LoadManager.OnCompleteSceneLoad -= OnSceneLoaded;
             if (_languageListenerRegistered)
             {
@@ -936,19 +947,85 @@ namespace OuterWildsAccess
             if (groundBody != null)
                 upDir = (targetPos - groundBody.GetWorldCenterOfMass()).normalized;
 
-            // Build base offset direction (from target toward player, horizontal)
-            Vector3 baseDir = playerBody.GetPosition() - targetPos;
-            baseDir = baseDir - Vector3.Project(baseDir, upDir);
-            if (baseDir.sqrMagnitude < 0.1f)
-            {
-                baseDir = Vector3.Cross(upDir, Vector3.forward);
-                if (baseDir.sqrMagnitude < 0.01f)
-                    baseDir = Vector3.Cross(upDir, Vector3.right);
-            }
-            baseDir = baseDir.normalized;
-
             bool isLocation = _navigationHandler.SelectedTargetIsLocation;
             Vector3 markerPos = targetPos;
+
+            // ── Smart TP: find the interaction collider and probe
+            // around its center instead of the raw transform. ─────────
+            // For interactables, this means we land in front of the
+            // collider at the right distance for interaction. For NPCs,
+            // standing in front (target.forward) avoids obstacles
+            // behind them (campfires, walls, etc.).
+            Vector3 probeCenter = targetPos;
+            Collider targetCol = target.GetComponent<Collider>();
+            if (targetCol == null)
+                targetCol = target.GetComponentInChildren<Collider>();
+            if (targetCol != null)
+                probeCenter = targetCol.bounds.center;
+
+            // Use the collider center's horizontal position but at
+            // the target's height for the probe ring center.
+            Vector3 probeCenterGround = targetPos
+                + (probeCenter - targetPos)
+                - Vector3.Project(probeCenter - targetPos, upDir);
+
+            // Log nearby campfires for fire debugging
+            var nearCampfires = Object.FindObjectsOfType<Campfire>();
+            if (nearCampfires != null)
+            {
+                foreach (var cf in nearCampfires)
+                {
+                    float cfDist = Vector3.Distance(cf.transform.position, targetPos);
+                    if (cfDist < 15f)
+                    {
+                        DebugLogger.Log(LogCategory.State, "Teleport",
+                            $"[TP-DEBUG] Nearby campfire: {cf.gameObject.name} dist={cfDist:F1}m"
+                            + $" pos=({cf.transform.position.x:F1},{cf.transform.position.y:F1},{cf.transform.position.z:F1})"
+                            + $" state={cf.GetState()}");
+                    }
+                }
+            }
+
+            DebugLogger.Log(LogCategory.State, "Teleport",
+                $"[TP-DEBUG] target={targetName} pos=({targetPos.x:F1},{targetPos.y:F1},{targetPos.z:F1})"
+                + $" collider={targetCol?.GetType().Name ?? "null"} probeCenter=({probeCenter.x:F1},{probeCenter.y:F1},{probeCenter.z:F1})"
+                + $" probeCenterGround=({probeCenterGround.x:F1},{probeCenterGround.y:F1},{probeCenterGround.z:F1})"
+                + $" playerPos=({playerBody.GetPosition().x:F1},{playerBody.GetPosition().y:F1},{playerBody.GetPosition().z:F1})"
+                + $" isInteractable={isInteractable} isLocation={isLocation}");
+
+            // Build base offset direction.
+            // For interactable targets: use target.forward (NPCs face
+            // the open conversation area). For locations/other: use
+            // direction from target toward player.
+            Vector3 baseDir;
+            if (isInteractable || !isLocation)
+            {
+                Vector3 tgtFwd = target.forward;
+                tgtFwd = tgtFwd - Vector3.Project(tgtFwd, upDir);
+                DebugLogger.Log(LogCategory.State, "Teleport",
+                    $"[TP-DEBUG] target.forward=({target.forward.x:F2},{target.forward.y:F2},{target.forward.z:F2})"
+                    + $" tgtFwd_horiz=({tgtFwd.x:F2},{tgtFwd.y:F2},{tgtFwd.z:F2})");
+                if (tgtFwd.sqrMagnitude < 0.01f)
+                {
+                    tgtFwd = Vector3.Cross(upDir, Vector3.forward);
+                    if (tgtFwd.sqrMagnitude < 0.01f)
+                        tgtFwd = Vector3.Cross(upDir, Vector3.right);
+                }
+                baseDir = tgtFwd.normalized;
+            }
+            else
+            {
+                // Location: prefer landing on the side closest to player
+                Vector3 playerToTarget = playerBody.GetPosition() - targetPos;
+                playerToTarget = playerToTarget - Vector3.Project(playerToTarget, upDir);
+                if (playerToTarget.sqrMagnitude < 0.1f)
+                {
+                    playerToTarget = Vector3.Cross(upDir, Vector3.forward);
+                    if (playerToTarget.sqrMagnitude < 0.01f)
+                        playerToTarget = Vector3.Cross(upDir, Vector3.right);
+                }
+                baseDir = playerToTarget.normalized;
+            }
 
             // For locations, find the ground surface first (markers are
             // often inside terrain).
@@ -959,42 +1036,72 @@ namespace OuterWildsAccess
                     100f, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
                 {
                     targetPos = groundHit.point;
+                    probeCenterGround = targetPos;
                 }
             }
 
-            // Probe for safe ground around the target
+            // Cache hazard sources for the three-layer detection below.
+            // FindObjectsOfType is acceptable here (called once per TP, not per frame).
+            _cachedCampfires = Object.FindObjectsOfType<Campfire>();
+            _cachedHazardVolumes = Object.FindObjectsOfType<HazardVolume>();
+            DebugLogger.Log(LogCategory.State, "Teleport",
+                $"[TP-DEBUG] Hazard cache: {_cachedCampfires?.Length ?? 0} campfires, {_cachedHazardVolumes?.Length ?? 0} hazard volumes");
+
+            // Probe for safe ground around the interaction point.
+            // Try expanding rings: 2 m, 4 m, 6 m offset.
             Vector3 bestPos = Vector3.zero;
             Vector3 bestOffsetDir = baseDir;
             bool foundSafe = false;
             bool rejectedDarkMatter = false;
 
-            // Larger offset and a higher/longer probe for the ship: we need
-            // to land well clear of the hull (~6m wide) AND outside the
-            // tractor beam volume around the airlock (~a few meters).
-            float tpOffset      = targetIsShip ? 12f : TpOffset;
             float tpProbeUp     = targetIsShip ? 8f  : TpProbeUp;
             float tpProbeLength = targetIsShip ? 16f : TpProbeLength;
+
+            float[] offsetRings = targetIsShip
+                ? new float[] { 12f }
+                : new float[] { TpOffset, TpOffset * 2f, TpOffset * 3f };
+
+            for (int ring = 0; ring < offsetRings.Length && !foundSafe; ring++)
+            {
+                float tpOffset = offsetRings[ring];
 
             int candidates = TpCandidates;
             for (int i = 0; i < candidates; i++)
             {
                 float angle = i * (360f / TpCandidates);
                 Vector3 offsetDir = Quaternion.AngleAxis(angle, upDir) * baseDir;
-                Vector3 probeStart = targetPos + offsetDir * tpOffset + upDir * tpProbeUp;
+                Vector3 probeStart = probeCenterGround + offsetDir * tpOffset + upDir * tpProbeUp;
 
                 if (!Physics.SphereCast(probeStart, TpProbeRadius, -upDir, out RaycastHit hit,
                     tpProbeLength - TpProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                {
+                    DebugLogger.Log(LogCategory.State, "Teleport",
+                        $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m NO_GROUND");
                     continue;
+                }
 
                 float slopeAngle = Vector3.Angle(upDir, hit.normal);
-                if (slopeAngle > TpMaxSlope) continue;
+                if (slopeAngle > TpMaxSlope)
+                {
+                    DebugLogger.Log(LogCategory.State, "Teleport",
+                        $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m STEEP={slopeAngle:F0}°");
+                    continue;
+                }
 
                 Vector3 landingPoint = hit.point + upDir * TpFootClear;
 
-                // Check hazards at landing point
+                // ── Hazard detection at landing point ────────────────
+                // Three-layer approach:
+                //  1. OverlapSphere (catches active collider volumes)
+                //  2. Campfire heat cone (geometric, independent of collider state)
+                //  3. HazardVolume penetration (bypasses disabled colliders)
                 bool hasDarkMatter = false;
                 bool hasHazard = false;
-                var cols = Physics.OverlapSphere(hit.point + upDir * 0.5f, 0.5f,
+                string hazardReason = "";
+
+                // Layer 1: OverlapSphere (fast, catches most active volumes)
+                var cols = Physics.OverlapSphere(
+                    landingPoint, 1.5f,
                     OWLayerMask.effectVolumeMask, QueryTriggerInteraction.Collide);
                 if (cols != null)
                 {
@@ -1004,9 +1111,9 @@ namespace OuterWildsAccess
                         if (hv != null)
                         {
                             if (hv.GetHazardType() == HazardVolume.HazardType.DARKMATTER)
-                                hasDarkMatter = true;
+                            { hasDarkMatter = true; hazardReason = "overlap_darkmatter"; }
                             else
-                                hasHazard = true;
+                            { hasHazard = true; hazardReason = "overlap_" + hv.GetHazardType(); }
                             break;
                         }
 
@@ -1015,20 +1122,116 @@ namespace OuterWildsAccess
                             && fv.GetFluidType() != FluidVolume.Type.TRACTOR_BEAM)
                         {
                             hasHazard = true;
+                            hazardReason = "overlap_fluid_" + fv.GetFluidType();
                             break;
                         }
                     }
                 }
+
+                // Layer 2: Campfire proximity + heat check.
+                // Only consider campfires within 4 m — GetHeatAtPosition()
+                // uses a vertical cone that can return heat=25.1 (max) for
+                // points far away horizontally but aligned with the cone axis.
+                // The 4 m pre-filter avoids false positives from distant fires.
+                if (!hasDarkMatter && !hasHazard && _cachedCampfires != null)
+                {
+                    for (int cf = 0; cf < _cachedCampfires.Length; cf++)
+                    {
+                        var campfire = _cachedCampfires[cf];
+                        if (campfire == null) continue;
+                        if (campfire.GetState() != Campfire.State.LIT) continue;
+
+                        float cfDist = Vector3.Distance(
+                            campfire.transform.position, landingPoint);
+
+                        // Skip campfires too far to be a real threat
+                        if (cfDist > 4f) continue;
+
+                        // Direct proximity — always dangerous
+                        if (cfDist < 1.5f)
+                        {
+                            hasHazard = true;
+                            hazardReason = $"campfire_proximity={cfDist:F1}m";
+                            break;
+                        }
+
+                        // Heat cone check for mid-range (1.5–4 m)
+                        float heat = campfire.GetHeatAtPosition(landingPoint);
+                        if (heat > 0f)
+                        {
+                            hasHazard = true;
+                            hazardReason = $"campfire_heat={heat:F1}_dist={cfDist:F1}m";
+                            break;
+                        }
+                    }
+                }
+
+                // Layer 3: HazardVolume penetration check (bypasses
+                // disabled colliders — catches volumes that OverlapSphere misses).
+                // Skip environmental mega-volumes (RAPIDS, SANDFALL) that span
+                // entire terrain zones and would block all surface landings.
+                // Only check volumes whose center is within 10 m — avoids
+                // catching distant large volumes that are not a local threat.
+                if (!hasDarkMatter && !hasHazard && _cachedHazardVolumes != null)
+                {
+                    for (int hvi = 0; hvi < _cachedHazardVolumes.Length; hvi++)
+                    {
+                        var hv = _cachedHazardVolumes[hvi];
+                        if (hv == null) continue;
+
+                        // Skip environmental mega-volumes
+                        var htype = hv.GetHazardType();
+                        if (htype == HazardVolume.HazardType.RAPIDS
+                            || htype == HazardVolume.HazardType.SANDFALL)
+                            continue;
+
+                        // Skip distant volumes
+                        float hvDist = Vector3.Distance(
+                            hv.transform.position, landingPoint);
+                        if (hvDist > 10f) continue;
+
+                        try
+                        {
+                            var trigVol = hv.GetOWTriggerVolume();
+                            if (trigVol == null) continue;
+                            float pen = trigVol.GetPenetrationDistance(landingPoint);
+                            if (pen > -0.5f) // inside or within 0.5m of boundary
+                            {
+                                if (htype == HazardVolume.HazardType.DARKMATTER)
+                                { hasDarkMatter = true; hazardReason = $"penetration_darkmatter_pen={pen:F2}"; }
+                                else
+                                { hasHazard = true; hazardReason = $"penetration_{htype}_pen={pen:F2}"; }
+                                break;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
                 // Ghost matter: always blocked
-                if (hasDarkMatter) { rejectedDarkMatter = true; continue; }
-                // Other hazards: blocked only without suit
-                if (hasHazard && !PlayerState.IsWearingSuit()) continue;
+                if (hasDarkMatter)
+                {
+                    DebugLogger.Log(LogCategory.State, "Teleport",
+                        $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m DARK_MATTER reason={hazardReason}");
+                    rejectedDarkMatter = true; continue;
+                }
+                // All hazards always blocked for TP
+                if (hasHazard)
+                {
+                    DebugLogger.Log(LogCategory.State, "Teleport",
+                        $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m HAZARD reason={hazardReason}");
+                    continue;
+                }
+
+                DebugLogger.Log(LogCategory.State, "Teleport",
+                    $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m SAFE land=({landingPoint.x:F1},{landingPoint.y:F1},{landingPoint.z:F1})");
 
                 bestPos = landingPoint;
                 bestOffsetDir = offsetDir;
                 foundSafe = true;
                 break;
             }
+            } // end ring loop
 
             if (!foundSafe)
             {
@@ -1038,24 +1241,34 @@ namespace OuterWildsAccess
                     return;
                 }
 
-                // With suit: fallback (suit protects)
-                if (PlayerState.IsWearingSuit())
+                // With suit: fallback for locations only (trust marker).
+                // For other targets (NPCs, interactables): if all 3 rings
+                // failed, the area is genuinely dangerous — don't drop
+                // the player from above into an unknown hazard.
+                if (PlayerState.IsWearingSuit() && isLocation)
                 {
-                    // Locations: trust game marker position
-                    // Others: offset +3m up
-                    bestPos = isLocation ? markerPos : targetPos + upDir * 3f;
+                    bestPos = markerPos;
                     bestOffsetDir = baseDir;
                     foundSafe = true;
                 }
                 else
                 {
-                    ScreenReader.Say(Loc.Get("teleport_need_suit"));
+                    ScreenReader.Say(Loc.Get("teleport_hazard_blocked"));
                     return;
                 }
             }
 
-            // Face toward the target
-            Vector3 faceDir = -bestOffsetDir;
+            // Face toward the interaction point (collider center),
+            // not just toward the target transform.
+            Vector3 aimPoint = (targetCol != null)
+                ? targetCol.bounds.center
+                : target.position;
+            Vector3 faceDir = aimPoint - bestPos;
+            faceDir = faceDir - Vector3.Project(faceDir, upDir);
+            if (faceDir.sqrMagnitude < 0.01f)
+                faceDir = -bestOffsetDir;
+            faceDir = faceDir.normalized;
+
             Quaternion targetRot = Quaternion.LookRotation(faceDir, upDir);
 
             WarpHelper.WarpAndMatchVelocity(
