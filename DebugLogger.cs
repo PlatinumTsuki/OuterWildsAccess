@@ -152,6 +152,18 @@ namespace OuterWildsAccess
             WriteToFile(line);
         }
 
+        /// <summary>
+        /// Always-on auto-walk telemetry — bypasses DebugMode gating.
+        /// Used during the reliability campaign (sessions 29+) to capture A* decisions,
+        /// fallback triggers, stuck reasons, and path statistics without requiring F12.
+        /// Written to the dedicated log file so the player can attach it to reports.
+        /// Console output is skipped to avoid polluting the shared OWML console.
+        /// </summary>
+        public static void LogAutoWalk(string message)
+        {
+            WriteToFile("[AW] " + message);
+        }
+
         private static string GetPrefix(LogCategory category)
         {
             switch (category)

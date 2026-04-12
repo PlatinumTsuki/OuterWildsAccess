@@ -410,6 +410,7 @@ namespace OuterWildsAccess
             _strings["hazard_sandfall"]         = "Chute de sable";
             _strings["hazard_generic"]          = "Zone dangereuse";
             _strings["auto_walk_stuck"]         = "Chemin bloqué. Auto-marche arrêtée.";
+            _strings["auto_walk_unsafe_path"]   = "Chemin non sécurisé, auto-marche annulée.";
             _strings["fluid_water"]             = "Eau";
             _strings["fluid_sand"]              = "Sable en chute";
             _strings["fluid_plasma"]            = "Plasma solaire";
@@ -1037,6 +1038,7 @@ namespace OuterWildsAccess
             _strings["hazard_sandfall"]         = "Sandfall";
             _strings["hazard_generic"]          = "Hazardous zone";
             _strings["auto_walk_stuck"]         = "Path blocked. Auto-walk stopped.";
+            _strings["auto_walk_unsafe_path"]   = "Unsafe path ahead, auto-walk cancelled.";
             _strings["fluid_water"]             = "Water";
             _strings["fluid_sand"]              = "Falling sand";
             _strings["fluid_plasma"]            = "Solar plasma";
@@ -1660,6 +1662,7 @@ namespace OuterWildsAccess
             _strings["hazard_sandfall"]         = "Sandfall";
             _strings["hazard_generic"]          = "Gefahrenzone";
             _strings["auto_walk_stuck"]         = "Weg blockiert. Automatisches Gehen gestoppt.";
+            _strings["auto_walk_unsafe_path"]   = "Unsicherer Weg, automatisches Gehen abgebrochen.";
             _strings["fluid_water"]             = "Wasser";
             _strings["fluid_sand"]              = "Fallender Sand";
             _strings["fluid_plasma"]            = "Sonnenplasma";
