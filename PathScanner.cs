@@ -51,6 +51,10 @@ namespace OuterWildsAccess
         private const float GoalHeightTol  = 4f;    // accept goal within this vertical tolerance
         private const int   MaxExplored    = 12000; // A* cell budget (tripled for complex terrain)
         private const float DiagCost       = 1.414f; // diagonal movement cost multiplier
+        // Session 32: continuous ground sampling step for CheckEdge.
+        // The game checks every ~0.1m at 60fps/6m/s. We use 0.2m for a good
+        // balance between accuracy and raycast budget (~5 samples per 1m cell).
+        private const float EdgeSampleStep  = 0.2f;
 
         #endregion
 
@@ -842,30 +846,41 @@ namespace OuterWildsAccess
                 return 1;
             }
 
-            // Session 31: cliff-prevention — replicate the game's forward-movement
-            // check from PlayerCharacterController.UpdateMovement (lines 671-684).
+            // Session 32: unified ground sampling — replicate the game's per-frame
+            // cliff check from PlayerCharacterController.UpdateMovement (lines 671-684)
+            // with CONTINUOUS coverage along the entire edge.
             //
-            // The game casts 0.1m AHEAD in the movement direction, then DOWN. If the
-            // ground ahead drops > 0.2m below foot level AND (slope > 45° OR drop > 1.5m),
-            // the game sets movement to Vector3.zero — the player physically CANNOT walk.
+            // The game checks 0.1m ahead EVERY FRAME at 60fps (one check per ~0.1m of
+            // travel at 6 m/s). We sample every EdgeSampleStep (0.2m) from 0.1m to
+            // near the end of the edge, giving full coverage with no gaps.
             //
-            // For true cliffs (no ground, or drop > MaxStepHeight): return 1 (impassable).
-            // For small drops (steps/ledges): DON'T decide here — fall through to the
-            // wall+jump checks which use SphereCasts to physically verify jumpability.
-            // Returning 2 blindly caused A* to plan 17 unjumpable jumps near Mica.
+            // At each sample: raycast down from foot-level + 1m. If drop > 0.2m AND
+            // (slope > 45° OR drop > 1.5m), the game blocks movement.
             //
-            // We check at 0.1m (matching the game) and 0.5m (mid-cell).
+            // True cliffs (drop > MaxStepHeight or no ground): return 1 (impassable).
+            // Small drops (steps/ledges): flag for wall+jump check below.
             bool cliffDetectedSmall = false;
             {
                 Vector3 edgeDir = b.GroundPos - a.GroundPos;
                 Vector3 edgeHoriz = edgeDir - Vector3.Project(edgeDir, _up);
-                if (edgeHoriz.sqrMagnitude > 0.001f)
+                float edgeHorizLen = edgeHoriz.magnitude;
+                if (edgeHorizLen > 0.01f)
                 {
-                    Vector3 edgeHorizN = edgeHoriz.normalized;
-                    float[] probes = { 0.1f, 0.5f };
-                    for (int ci = 0; ci < probes.Length; ci++)
+                    Vector3 edgeHorizN = edgeHoriz / edgeHorizLen;
+
+                    // Interpolate foot height along edge for accurate drop measurement
+                    float aFootH = Vector3.Dot(a.GroundPos, _up);
+                    float bFootH = Vector3.Dot(b.GroundPos, _up);
+
+                    for (float d = 0.1f; d < edgeHorizLen; d += EdgeSampleStep)
                     {
-                        Vector3 probeOrigin = a.GroundPos + _up * 1f + edgeHorizN * probes[ci];
+                        // Foot height at this sample via linear interpolation a→b
+                        float t = d / edgeHorizLen;
+                        float footH = Mathf.Lerp(aFootH, bFootH, t);
+                        Vector3 footPos = a.GroundPos + edgeHorizN * d
+                            + _up * (footH - aFootH);
+                        Vector3 probeOrigin = footPos + _up * 1f;
+
                         if (Physics.Raycast(probeOrigin, -_up, out RaycastHit cliffHit, 20f,
                             OWLayerMask.groundMask, QueryTriggerInteraction.Ignore))
                         {
@@ -873,7 +888,6 @@ namespace OuterWildsAccess
                             float cliffSlope = Vector3.Angle(_up, cliffHit.normal);
                             if (dropBelowFeet > 0.2f && (cliffSlope > 45f || dropBelowFeet > 1.5f))
                             {
-                                // True cliff — drop beyond jump range
                                 if (dropBelowFeet > MaxStepHeight)
                                 {
                                     _statEdgesImpassable++;
@@ -881,23 +895,19 @@ namespace OuterWildsAccess
                                     BufferEdgeRejectLog(a, b, "CLIFF drop=" +
                                         dropBelowFeet.ToString("F2") + "m slope=" +
                                         cliffSlope.ToString("F0") + "° @" +
-                                        probes[ci].ToString("F1") + "m");
+                                        d.ToString("F2") + "m");
                                     return 1;
                                 }
-                                // Small drop — the game blocks walking here, but it
-                                // might be jumpable. Flag it and let the wall+jump
-                                // checks below verify with SphereCasts.
                                 cliffDetectedSmall = true;
                                 _statEdgeRejectCliff++;
                             }
                         }
                         else
                         {
-                            // No ground found ahead — true void
                             _statEdgesImpassable++;
                             _statEdgeRejectCliff++;
                             BufferEdgeRejectLog(a, b, "CLIFF no_ground @" +
-                                probes[ci].ToString("F1") + "m");
+                                d.ToString("F2") + "m");
                             return 1;
                         }
                     }
