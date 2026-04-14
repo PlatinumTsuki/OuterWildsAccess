@@ -877,10 +877,13 @@ namespace OuterWildsAccess
         private const float TpProbeRadius  = 0.35f;  // SphereCast radius (match PathScanner)
         private const float TpProbeUp      = 3f;     // start probe this far above candidate
         private const float TpProbeLength  = 6f;     // max downward probe distance
-        private const float TpMaxSlope     = 45f;    // reject slopes steeper than this
+        private const float TpMaxSlope     = 45f;    // reject slopes steeper than this (single normal)
+        private const float TpMaxSlopePair = 115f;   // multi-slope pair threshold (game's _maxAngleBetweenSlopes)
         private const float TpOffset       = 2f;     // horizontal offset from target
         private const float TpFootClear    = 1.2f;   // clearance above ground for feet
         private const int   TpCandidates   = 8;      // positions to try around target
+        private static readonly RaycastHit[] _tpCastBuffer = new RaycastHit[32];
+        private static readonly Vector3[]    _tpProjectedNormals = new Vector3[16];
 
 
         private void TeleportToSelected()
@@ -937,7 +940,10 @@ namespace OuterWildsAccess
                 return;
             }
 
-            // Calculate up direction at target (away from planet center)
+            // Calculate up direction at target using the game's gravity system.
+            // Search for a GravityVolume on the target's body or its parents
+            // (e.g., island → planet) and use its actual force calculation.
+            // This handles spherical, directional, and all other gravity types.
             Vector3 targetPos = target.position;
             Vector3 upDir = playerBody.transform.up;
             OWRigidbody groundBody = null;
@@ -945,7 +951,48 @@ namespace OuterWildsAccess
             catch { }
 
             if (groundBody != null)
-                upDir = (targetPos - groundBody.GetWorldCenterOfMass()).normalized;
+            {
+                GravityVolume gv = groundBody.GetComponentInChildren<GravityVolume>();
+
+                // If no GravityVolume on this body, walk up the hierarchy.
+                // Handles islands on Giant's Deep (island has no gravity,
+                // the planet body above it does).
+                if (gv == null)
+                {
+                    Transform cur = groundBody.transform.parent;
+                    while (cur != null && gv == null)
+                    {
+                        gv = cur.GetComponent<GravityVolume>();
+                        if (gv == null)
+                            gv = cur.GetComponentInChildren<GravityVolume>();
+                        cur = cur.parent;
+                    }
+                }
+
+                if (gv != null)
+                {
+                    try
+                    {
+                        Vector3 gravAccel = gv.CalculateForceAccelerationAtPoint(targetPos);
+                        if (gravAccel.sqrMagnitude > 0.01f)
+                            upDir = -gravAccel.normalized;
+                        else
+                            upDir = (targetPos - groundBody.GetWorldCenterOfMass()).normalized;
+                    }
+                    catch
+                    {
+                        upDir = (targetPos - groundBody.GetWorldCenterOfMass()).normalized;
+                    }
+                }
+                else
+                {
+                    // No GravityVolume found — geometric fallback
+                    upDir = (targetPos - groundBody.GetWorldCenterOfMass()).normalized;
+                }
+            }
+
+            DebugLogger.Log(LogCategory.State, "Teleport",
+                $"[TP-DEBUG] upDir=({upDir.x:F2},{upDir.y:F2},{upDir.z:F2}) groundBody={groundBody?.name ?? "null"}");
 
             bool isLocation = _navigationHandler.SelectedTargetIsLocation;
             Vector3 markerPos = targetPos;
@@ -1037,6 +1084,8 @@ namespace OuterWildsAccess
                 {
                     targetPos = groundHit.point;
                     probeCenterGround = targetPos;
+                    // Update markerPos so fallback uses ground-adjusted position
+                    markerPos = groundHit.point + upDir * TpFootClear;
                 }
             }
 
@@ -1044,6 +1093,7 @@ namespace OuterWildsAccess
             // FindObjectsOfType is acceptable here (called once per TP, not per frame).
             _cachedCampfires = Object.FindObjectsOfType<Campfire>();
             _cachedHazardVolumes = Object.FindObjectsOfType<HazardVolume>();
+            bool hasSuit = PlayerState.IsWearingSuit();
             DebugLogger.Log(LogCategory.State, "Teleport",
                 $"[TP-DEBUG] Hazard cache: {_cachedCampfires?.Length ?? 0} campfires, {_cachedHazardVolumes?.Length ?? 0} hazard volumes");
 
@@ -1072,16 +1122,90 @@ namespace OuterWildsAccess
                 Vector3 offsetDir = Quaternion.AngleAxis(angle, upDir) * baseDir;
                 Vector3 probeStart = probeCenterGround + offsetDir * tpOffset + upDir * tpProbeUp;
 
-                if (!Physics.SphereCast(probeStart, TpProbeRadius, -upDir, out RaycastHit hit,
-                    tpProbeLength - TpProbeRadius, OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                // Multi-hit SphereCast — lets us run the game's 3-step
+                // grounding logic (single normal, any-hit normal, paired normals)
+                // instead of rejecting on the closest hit alone.
+                int hitCount = Physics.SphereCastNonAlloc(
+                    probeStart, TpProbeRadius, -upDir, _tpCastBuffer,
+                    tpProbeLength - TpProbeRadius,
+                    OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore);
+
+                // Find closest valid hit (skip player rigidbody)
+                RaycastHit hit = default;
+                float bestDist = float.MaxValue;
+                bool foundAny = false;
+                for (int h = 0; h < hitCount; h++)
+                {
+                    var rh = _tpCastBuffer[h];
+                    if (rh.collider == null) continue;
+                    if (rh.collider.GetComponentInParent<PlayerCharacterController>() != null) continue;
+                    if (rh.distance < bestDist)
+                    {
+                        bestDist = rh.distance;
+                        hit = rh;
+                        foundAny = true;
+                    }
+                }
+
+                if (!foundAny)
                 {
                     DebugLogger.Log(LogCategory.State, "Teleport",
                         $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m NO_GROUND");
                     continue;
                 }
 
+                // Step 1: single-normal check on closest hit
                 float slopeAngle = Vector3.Angle(upDir, hit.normal);
-                if (slopeAngle > TpMaxSlope)
+                bool accepted = slopeAngle <= TpMaxSlope;
+                string acceptReason = accepted ? "WALK" : null;
+
+                // Step 2: try any valid hit with normal ≤ 45°
+                if (!accepted)
+                {
+                    for (int h = 0; h < hitCount && !accepted; h++)
+                    {
+                        var rh = _tpCastBuffer[h];
+                        if (rh.collider == null) continue;
+                        if (rh.collider.GetComponentInParent<PlayerCharacterController>() != null) continue;
+                        float alt = Vector3.Angle(upDir, rh.normal);
+                        if (alt <= TpMaxSlope)
+                        {
+                            hit = rh;
+                            slopeAngle = alt;
+                            accepted = true;
+                            acceptReason = "WALK_ALT";
+                        }
+                    }
+                }
+
+                // Step 3: multi-slope paired-normal check (game's 115° rule)
+                if (!accepted)
+                {
+                    int validN = 0;
+                    for (int h = 0; h < hitCount && validN < _tpProjectedNormals.Length; h++)
+                    {
+                        var rh = _tpCastBuffer[h];
+                        if (rh.collider == null) continue;
+                        if (rh.collider.GetComponentInParent<PlayerCharacterController>() != null) continue;
+                        _tpProjectedNormals[validN] = Vector3.ProjectOnPlane(rh.normal, upDir);
+                        validN++;
+                    }
+
+                    for (int k = 0; k < validN && !accepted; k++)
+                    {
+                        for (int l = k + 1; l < validN; l++)
+                        {
+                            if (Vector3.Angle(_tpProjectedNormals[k], _tpProjectedNormals[l]) > TpMaxSlopePair)
+                            {
+                                accepted = true;
+                                acceptReason = "WALK_MULTISLOPE";
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!accepted)
                 {
                     DebugLogger.Log(LogCategory.State, "Teleport",
                         $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m STEEP={slopeAngle:F0}°");
@@ -1110,29 +1234,45 @@ namespace OuterWildsAccess
                         var hv = cols[c].GetComponent<HazardVolume>();
                         if (hv != null)
                         {
-                            if (hv.GetHazardType() == HazardVolume.HazardType.DARKMATTER)
-                            { hasDarkMatter = true; hazardReason = "overlap_darkmatter"; }
-                            else
-                            { hasHazard = true; hazardReason = "overlap_" + hv.GetHazardType(); }
-                            break;
+                            var hvType = hv.GetHazardType();
+                            if (hvType == HazardVolume.HazardType.DARKMATTER)
+                            { hasDarkMatter = true; hazardReason = "overlap_darkmatter"; break; }
+                            if (hvType == HazardVolume.HazardType.ELECTRICITY)
+                            { hasHazard = true; hazardReason = "overlap_ELECTRICITY"; break; }
+                            // RAPIDS/SANDFALL: environmental, safe on ground
+                            if (hvType == HazardVolume.HazardType.RAPIDS
+                                || hvType == HazardVolume.HazardType.SANDFALL)
+                                continue;
+                            // HEAT/FIRE/GENERAL: suit protects
+                            if (!hasSuit)
+                            { hasHazard = true; hazardReason = "overlap_" + hvType; break; }
+                            continue;
                         }
 
                         var fv = cols[c].GetComponent<FluidVolume>();
-                        if (fv != null && fv.GetFluidType() != FluidVolume.Type.AIR
-                            && fv.GetFluidType() != FluidVolume.Type.TRACTOR_BEAM)
+                        if (fv != null)
                         {
+                            var fType = fv.GetFluidType();
+                            // AIR, TRACTOR_BEAM, WATER, CLOUD: always safe
+                            // (player lands on solid ground, not inside the fluid)
+                            if (fType == FluidVolume.Type.AIR
+                                || fType == FluidVolume.Type.TRACTOR_BEAM
+                                || fType == FluidVolume.Type.WATER
+                                || fType == FluidVolume.Type.CLOUD)
+                                continue;
+                            // SAND: suit protects
+                            if (fType == FluidVolume.Type.SAND && hasSuit)
+                                continue;
                             hasHazard = true;
-                            hazardReason = "overlap_fluid_" + fv.GetFluidType();
+                            hazardReason = "overlap_fluid_" + fType;
                             break;
                         }
                     }
                 }
 
                 // Layer 2: Campfire proximity + heat check.
-                // Only consider campfires within 4 m — GetHeatAtPosition()
-                // uses a vertical cone that can return heat=25.1 (max) for
-                // points far away horizontally but aligned with the cone axis.
-                // The 4 m pre-filter avoids false positives from distant fires.
+                // Proximity < 1.5m: always blocked (player would land IN the fire).
+                // Heat cone 1.5-4m: blocked only without suit (suit protects from heat).
                 if (!hasDarkMatter && !hasHazard && _cachedCampfires != null)
                 {
                     for (int cf = 0; cf < _cachedCampfires.Length; cf++)
@@ -1144,10 +1284,9 @@ namespace OuterWildsAccess
                         float cfDist = Vector3.Distance(
                             campfire.transform.position, landingPoint);
 
-                        // Skip campfires too far to be a real threat
                         if (cfDist > 4f) continue;
 
-                        // Direct proximity — always dangerous
+                        // Direct proximity — always dangerous (inside the fire)
                         if (cfDist < 1.5f)
                         {
                             hasHazard = true;
@@ -1155,23 +1294,23 @@ namespace OuterWildsAccess
                             break;
                         }
 
-                        // Heat cone check for mid-range (1.5–4 m)
-                        float heat = campfire.GetHeatAtPosition(landingPoint);
-                        if (heat > 0f)
+                        // Heat cone 1.5-4m — suit protects
+                        if (!hasSuit)
                         {
-                            hasHazard = true;
-                            hazardReason = $"campfire_heat={heat:F1}_dist={cfDist:F1}m";
-                            break;
+                            float heat = campfire.GetHeatAtPosition(landingPoint);
+                            if (heat > 0f)
+                            {
+                                hasHazard = true;
+                                hazardReason = $"campfire_heat={heat:F1}_dist={cfDist:F1}m";
+                                break;
+                            }
                         }
                     }
                 }
 
                 // Layer 3: HazardVolume penetration check (bypasses
                 // disabled colliders — catches volumes that OverlapSphere misses).
-                // Skip environmental mega-volumes (RAPIDS, SANDFALL) that span
-                // entire terrain zones and would block all surface landings.
-                // Only check volumes whose center is within 10 m — avoids
-                // catching distant large volumes that are not a local threat.
+                // Same suit-aware logic as Layer 1.
                 if (!hasDarkMatter && !hasHazard && _cachedHazardVolumes != null)
                 {
                     for (int hvi = 0; hvi < _cachedHazardVolumes.Length; hvi++)
@@ -1179,13 +1318,17 @@ namespace OuterWildsAccess
                         var hv = _cachedHazardVolumes[hvi];
                         if (hv == null) continue;
 
-                        // Skip environmental mega-volumes
                         var htype = hv.GetHazardType();
+                        // Environmental mega-volumes: always safe on ground
                         if (htype == HazardVolume.HazardType.RAPIDS
                             || htype == HazardVolume.HazardType.SANDFALL)
                             continue;
+                        // Suit-survivable hazards: skip when wearing suit
+                        if (hasSuit
+                            && htype != HazardVolume.HazardType.DARKMATTER
+                            && htype != HazardVolume.HazardType.ELECTRICITY)
+                            continue;
 
-                        // Skip distant volumes
                         float hvDist = Vector3.Distance(
                             hv.transform.position, landingPoint);
                         if (hvDist > 10f) continue;
@@ -1195,7 +1338,7 @@ namespace OuterWildsAccess
                             var trigVol = hv.GetOWTriggerVolume();
                             if (trigVol == null) continue;
                             float pen = trigVol.GetPenetrationDistance(landingPoint);
-                            if (pen > -0.5f) // inside or within 0.5m of boundary
+                            if (pen > -0.5f)
                             {
                                 if (htype == HazardVolume.HazardType.DARKMATTER)
                                 { hasDarkMatter = true; hazardReason = $"penetration_darkmatter_pen={pen:F2}"; }
@@ -1215,16 +1358,16 @@ namespace OuterWildsAccess
                         $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m DARK_MATTER reason={hazardReason}");
                     rejectedDarkMatter = true; continue;
                 }
-                // All hazards always blocked for TP
+                // Lethal or suit-unprotected hazard — blocked
                 if (hasHazard)
                 {
                     DebugLogger.Log(LogCategory.State, "Teleport",
-                        $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m HAZARD reason={hazardReason}");
+                        $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m HAZARD suit={hasSuit} reason={hazardReason}");
                     continue;
                 }
 
                 DebugLogger.Log(LogCategory.State, "Teleport",
-                    $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m SAFE land=({landingPoint.x:F1},{landingPoint.y:F1},{landingPoint.z:F1})");
+                    $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m SAFE({acceptReason}) land=({landingPoint.x:F1},{landingPoint.y:F1},{landingPoint.z:F1})");
 
                 bestPos = landingPoint;
                 bestOffsetDir = offsetDir;
