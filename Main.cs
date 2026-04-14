@@ -881,6 +881,8 @@ namespace OuterWildsAccess
         private const float TpMaxSlopePair = 115f;   // multi-slope pair threshold (game's _maxAngleBetweenSlopes)
         private const float TpOffset       = 2f;     // horizontal offset from target
         private const float TpFootClear    = 1.2f;   // clearance above ground for feet
+        private const float TpMaxAboveTarget = 0.3f; // reject hits this far ABOVE target along upDir (overhang filter — semantic check on NPC position)
+        private const float TpCapsuleMargin = 0.05f; // shrink player capsule radius for fit test (ignore tiny grazes)
         private const int   TpCandidates   = 8;      // positions to try around target
         private static readonly RaycastHit[] _tpCastBuffer = new RaycastHit[32];
         private static readonly Vector3[]    _tpProjectedNormals = new Vector3[16];
@@ -1212,7 +1214,55 @@ namespace OuterWildsAccess
                     continue;
                 }
 
+                // Overhang filter (semantic): the ground a player can reach
+                // FROM THE NPC'S POSITION sits at or slightly below the NPC
+                // along the local upDir. A positive heightAboveTarget means
+                // the probe grabbed a structure above the NPC (roof edge,
+                // balcony, building top) — landing on top of it puts the
+                // player on a surface that isn't continuous with the NPC's
+                // standing surface (Hornfels / Observatory_Collider case).
+                float heightAboveTarget = Vector3.Dot(hit.point - targetPos, upDir);
+                if (heightAboveTarget > TpMaxAboveTarget)
+                {
+                    DebugLogger.Log(LogCategory.State, "Teleport",
+                        $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m OVERHANG height={heightAboveTarget:F2}m col={hit.collider?.name ?? "null"}");
+                    continue;
+                }
+
                 Vector3 landingPoint = hit.point + upDir * TpFootClear;
+
+                // Capsule fit check (geometric): the probe SphereCast uses a
+                // smaller radius (TpProbeRadius=0.35) than the actual player
+                // capsule (~0.5), so it can find "walkable ground" at spots
+                // where a wall/cliff face would clip the capsule on warp →
+                // physics ejects → IMPACT death (Hornfels v2 / cliff case).
+                // API note: GetComponent<CapsuleCollider>() is the reliable
+                // pattern (used by GhostController.cs:129) — Locator.GetPlayerCollider()
+                // returns the FIRST Collider on Player_Body which may be the
+                // anti-sinking SphereCollider, not the body capsule.
+                var pBody = Locator.GetPlayerBody();
+                CapsuleCollider playerCapsule = (pBody != null)
+                    ? pBody.GetComponent<CapsuleCollider>() : null;
+                if (playerCapsule != null)
+                {
+                    float capRadius = playerCapsule.radius;
+                    float capHeight = playerCapsule.height;
+                    Vector3 capP1 = landingPoint + upDir * capRadius;
+                    Vector3 capP2 = landingPoint + upDir * (capHeight - capRadius);
+                    if (Physics.CheckCapsule(capP1, capP2,
+                            Mathf.Max(0.05f, capRadius - TpCapsuleMargin),
+                            OWLayerMask.physicalMask, QueryTriggerInteraction.Ignore))
+                    {
+                        DebugLogger.Log(LogCategory.State, "Teleport",
+                            $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m CAPSULE_BLOCKED r={capRadius:F2} h={capHeight:F2}");
+                        continue;
+                    }
+                }
+                else
+                {
+                    DebugLogger.Log(LogCategory.State, "Teleport",
+                        "[TP-PROBE] capsule check skipped — playerCapsule null (body=" + (pBody == null ? "null" : "ok") + ")");
+                }
 
                 // ── Hazard detection at landing point ────────────────
                 // Three-layer approach:
@@ -1366,8 +1416,14 @@ namespace OuterWildsAccess
                     continue;
                 }
 
+                // Diagnostics — kept active for one build to verify the
+                // overhang + capsule check behaviour in the field. Remove once stable.
+                // heightAboveTarget already computed by the overhang filter above.
+                string hitColliderName = hit.collider != null ? hit.collider.name : "null";
+
                 DebugLogger.Log(LogCategory.State, "Teleport",
-                    $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m SAFE({acceptReason}) land=({landingPoint.x:F1},{landingPoint.y:F1},{landingPoint.z:F1})");
+                    $"[TP-PROBE] ring={ring} i={i} angle={angle:F0}° offset={tpOffset}m SAFE({acceptReason}) land=({landingPoint.x:F1},{landingPoint.y:F1},{landingPoint.z:F1})"
+                    + $" heightAboveTarget={heightAboveTarget:F2}m hitCol={hitColliderName}");
 
                 bestPos = landingPoint;
                 bestOffsetDir = offsetDir;
